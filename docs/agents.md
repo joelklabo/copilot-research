@@ -194,6 +194,70 @@ gh auth status
 - Chose Go + Bubble Tea for best TUI experience
 - Decided on separate prompt files for flexibility
 
+### 2025-11-17: CLI Research Tool Design
+**Key insight**: When building research tools, the experience matters as much as the results.
+
+**Live Feedback is Critical**:
+- Users need constant visual feedback during long operations
+- Bubble Tea's spinner + progress components solve this elegantly
+- Never let CLI appear frozen (use async operations + UI updates)
+
+**Database for Learning**:
+- SQLite enables accumulating research knowledge over time
+- Store: query → results → citations → timestamp
+- Future queries can reference past research
+- Use WAL mode for concurrent access: `PRAGMA journal_mode=WAL`
+
+**Prompt Management**:
+- Separate prompt files (`.md` format) for git-friendly versioning
+- Easy to swap between AI backends (Copilot, Claude, GPT)
+- Template variables for dynamic content injection
+- Default prompt should be comprehensive but not overwhelming
+
+### 2025-11-17: Go & Bubble Tea Learnings
+
+**Bubble Tea Best Practices**:
+- Run long operations in goroutines, communicate via messages
+- Create custom message types for different events
+- Use `tea.Cmd` for async operations
+- Lipgloss for consistent, beautiful styling
+- Spinner + progress components from Charm ecosystem
+
+**Go CLI Patterns**:
+- Cobra for command structure and flag parsing
+- Accept input from: args, stdin, files (make it Unix-friendly)
+- Output format options: pretty (default), JSON, markdown
+- Handle SIGINT/SIGTERM gracefully
+- Single binary deployment (no dependencies)
+
+**Testing Go CLIs**:
+- Use `exec.Command` for integration tests
+- Table-driven tests for different input formats
+- Mock external commands (`gh copilot`) for unit tests
+- Benchmark long-running operations
+- Test UI rendering with Bubble Tea's testing helpers
+
+### 2025-11-17: Research Agent Methodology
+
+**Multi-Query Synthesis Pattern**:
+1. Break down complex topic into focused sub-queries
+2. Execute parallel research on each sub-query
+3. Deduplicate findings across sources
+4. Synthesize into coherent narrative
+5. Provide inline citations
+
+**Quality Indicators**:
+- Multiple source corroboration
+- Recency of information (timestamp everything)
+- Authority of source (official docs > blogs)
+- Depth vs breadth trade-off based on query
+
+**Iterative Refinement**:
+- Initial broad sweep (understand landscape)
+- Follow-up targeted queries (fill gaps)
+- Cross-reference contradictions
+- Update knowledge base with learnings
+
 ---
 
 *Keep updated as you discover patterns and solve problems.*
