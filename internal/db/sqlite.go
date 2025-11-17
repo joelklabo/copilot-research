@@ -324,6 +324,37 @@ func (s *SQLiteDB) GetModeStats() (map[string]int, error) {
 	return stats, nil
 }
 
+// GetTopQueries returns the most common queries
+func (s *SQLiteDB) GetTopQueries(limit int) ([]QueryCount, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	query := `
+		SELECT query, COUNT(*) as count
+		FROM research_sessions
+		GROUP BY query
+		ORDER BY count DESC
+		LIMIT ?
+	`
+
+	rows, err := s.db.Query(query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get top queries: %w", err)
+	}
+	defer rows.Close()
+
+	var topQueries []QueryCount
+	for rows.Next() {
+		var qc QueryCount
+		if err := rows.Scan(&qc.Query, &qc.Count); err != nil {
+			return nil, fmt.Errorf("failed to scan top query: %w", err)
+		}
+		topQueries = append(topQueries, qc)
+	}
+
+	return topQueries, nil
+}
+
 // Close closes the database connection
 func (s *SQLiteDB) Close() error {
 	s.mu.Lock()

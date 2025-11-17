@@ -80,7 +80,21 @@ func _runStats(database db.DB, dbPath string) error {
 		w.Flush()
 	}
 
-	// TODO: Implement "Most common queries" from database.SearchHistory
+	// Get top queries
+	topQueries, err := database.GetTopQueries(5) // Limit to top 5
+	if err != nil {
+		return fmt.Errorf("failed to get top queries: %w", err)
+	}
+
+	if len(topQueries) > 0 {
+		fmt.Println()
+		fmt.Println(styles.HeaderStyle.Render("Top Queries:"))
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+		for i, qc := range topQueries {
+			fmt.Fprintf(w, "  %d. %s (%d times)\n", i+1, qc.Query, qc.Count)
+		}
+		w.Flush()
+	}
 
 	return nil
 }

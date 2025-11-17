@@ -34,6 +34,12 @@ func TestRunStats(t *testing.T) {
 				"deep":  1,
 			}, nil
 		},
+		GetTopQueriesFunc: func(limit int) ([]db.QueryCount, error) {
+			return []db.QueryCount{
+				{Query: "Swift concurrency", Count: 2},
+				{Query: "Go routines", Count: 1},
+			}, nil
+		},
 		CloseFunc: func() error {
 			return nil
 		},
@@ -69,6 +75,9 @@ func TestRunStats(t *testing.T) {
 	assert.Contains(t, output, "Mode Usage:")
 	assert.Contains(t, output, "quick   2 (67%)")
 	assert.Contains(t, output, "deep    1 (33%)")
+	assert.Contains(t, output, "Top Queries:")
+	assert.Contains(t, output, "1. Swift concurrency (2 times)")
+	assert.Contains(t, output, "2. Go routines (1 times)")
 }
 
 func TestFormatBytes(t *testing.T) {

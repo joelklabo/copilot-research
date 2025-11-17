@@ -16,6 +16,7 @@ type DB interface {
 	// Stats
 	GetTotalSessions() (int, error)
 	GetModeStats() (map[string]int, error)
+	GetTopQueries(limit int) ([]QueryCount, error)
 
 	// Cleanup
 	Close() error
@@ -32,6 +33,7 @@ type MockDB struct {
 	IncrementPatternFunc func(name string) error
 	GetTotalSessionsFunc func() (int, error)
 	GetModeStatsFunc   func() (map[string]int, error)
+	GetTopQueriesFunc  func(limit int) ([]QueryCount, error)
 	CloseFunc          func() error
 }
 
@@ -103,6 +105,14 @@ func (m *MockDB) GetTotalSessions() (int, error) {
 func (m *MockDB) GetModeStats() (map[string]int, error) {
 	if m.GetModeStatsFunc != nil {
 		return m.GetModeStatsFunc()
+	}
+	return nil, nil
+}
+
+// GetTopQueries calls GetTopQueriesFunc
+func (m *MockDB) GetTopQueries(limit int) ([]QueryCount, error) {
+	if m.GetTopQueriesFunc != nil {
+		return m.GetTopQueriesFunc(limit)
 	}
 	return nil, nil
 }

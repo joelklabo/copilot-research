@@ -30,3 +30,9 @@ type SearchHistory struct {
 	Query     string    `json:"query"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+// QueryCount represents a query string and its count
+type QueryCount struct {
+	Query string `json:"query"`
+	Count int    `json:"count"`
+}

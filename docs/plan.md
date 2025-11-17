@@ -2144,9 +2144,10 @@ Tests: Calculation, formatting, empty DB
 ---
 
 #### Task 7.5: Config Command
-**Status**: 🚧 In Progress  
+**Status**: ✅ Complete  
 **Estimated**: 25 minutes  
-**Priority**: P2
+**Priority**: P2  
+**Commit**: 891f691
 
 **Description**:
 Manage configuration settings via CLI.
