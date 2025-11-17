@@ -902,6 +902,124 @@ Style := lipgloss.NewStyle().
 - Test View() output contains expected text
 - Colors are terminal color codes (0-255)
 
+### 2025-11-17: Research UI Model (State Machine)
+
+**State Machine Pattern in Bubble Tea**:
+```go
+const (
+    stateResearching = "researching"
+    stateComplete    = "complete"
+    stateError       = "error"
+)
+
+type ResearchModel struct {
+    state string  // Current state
+    // ... state-specific data
+}
+```
+
+**Custom Message Pattern**:
+```go
+// Define custom messages for communication
+type ProgressMsg string
+type CompleteMsg struct { Result *research.ResearchResult }
+type ErrorMsg struct { Err error }
+
+// Handle in Update()
+case ProgressMsg:
+    m.status = string(msg)
+    return m, nil
+```
+
+**Key State Machine Patterns**:
+1. **State-Based Rendering**: View() switches on state
+   - Different views for different states
+   - Clean separation of concerns
+   - Easy to add new states
+
+2. **State Transitions**: Update() changes state based on messages
+   - ProgressMsg → stay in researching
+   - CompleteMsg → transition to complete
+   - ErrorMsg → transition to error
+
+3. **State-Specific Behavior**: Update() handles inputs differently per state
+   - Researching: Update spinner, handle Ctrl+C
+   - Complete: Handle viewport scrolling, allow q to quit
+   - Error: Allow q to quit
+
+**Viewport Integration Pattern**:
+```go
+// Initialize on WindowSizeMsg
+case tea.WindowSizeMsg:
+    if m.state == stateComplete && !m.ready {
+        m.viewport = viewport.New(msg.Width, msg.Height-10)
+        m.viewport.SetContent(m.formatResult())
+        m.ready = true
+    }
+
+// Pass key events to viewport
+if m.state == stateComplete && m.ready {
+    m.viewport, cmd = m.viewport.Update(msg)
+    return m, cmd
+}
+```
+
+**Keyboard Control Patterns**:
+- `Ctrl+C`: Always quits (universal)
+- `q`: State-dependent quit (only in complete/error states)
+- `↑/↓`: Viewport scrolling (only when viewport ready)
+- Check `tea.KeyMsg.Type` for special keys
+- Check `tea.KeyMsg.Runes` for character keys
+
+**Component Composition**:
+- ResearchModel contains SpinnerModel
+- Update child components in parent Update()
+- Type assert when returning: `m.spinner = spinnerModel.(*SpinnerModel)`
+- Pass messages to child components selectively
+
+**View Rendering Strategy**:
+```go
+func (m ResearchModel) View() string {
+    switch m.state {
+    case stateResearching:
+        return m.viewResearching()
+    case stateComplete:
+        return m.viewComplete()
+    case stateError:
+        return m.viewError()
+    }
+}
+```
+
+**Progress Display Pattern**:
+- Store status in model: `m.status = string(msg)`
+- Update child component on render: `m.spinner.SetMessage(m.status)`
+- Lazy update (in View) avoids storing duplicate state
+- Always show latest status without complex synchronization
+
+**Testing State Machines**:
+- Test initial state
+- Test each message type causes correct transition
+- Test View() output for each state
+- Test keyboard controls in each state
+- Test component updates (spinner animation)
+- Verify tea.Model interface compliance
+
+**Common Mistakes Avoided**:
+1. Not initializing viewport with proper size → Wait for WindowSizeMsg
+2. Viewport not scrolling → Check `ready` flag before passing events
+3. Status not showing → Call SetMessage() in View() not just Update()
+4. Type assertion panic → Use type assertion with check: `model.(*Type)`
+5. Quit not working → Handle Ctrl+C globally, 'q' conditionally
+
+**For Future AI Agents**:
+- State machines simplify complex UI flows
+- Use custom message types for communication
+- Initialize viewports on WindowSizeMsg, not in Init()
+- Lazy update child components in View() for simplicity
+- Test all state transitions and keyboard controls
+- viewport.New() height should leave space for header/footer
+
 ---
 
 *Keep updated as you discover patterns and solve problems.*
