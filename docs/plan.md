@@ -929,57 +929,778 @@ Tests: Manual validation with gh copilot
 
 ---
 
-### Phase 5: Research Engine
+### Phase 5: Multi-Provider Authentication & Integration
 
-#### Task 5.1: GitHub Copilot Integration
+#### Task 5.1: Provider Abstraction Layer
 **Status**: ⬜ Not Started  
-**Estimated**: 30 minutes  
+**Estimated**: 60 minutes  
 **Priority**: P0
 
 **Description**:
-Create wrapper around `gh copilot` CLI that can execute queries programmatically and capture output.
+Design and implement provider abstraction layer supporting multiple AI backends (GitHub Copilot, OpenAI, Anthropic Claude) with unified interface.
 
 **Acceptance Criteria**:
-- Execute `gh copilot suggest` with prompt
-- Capture stdout/stderr
-- Handle errors (not authenticated, gh not found)
-- Timeout after reasonable duration
-- Return clean markdown output
+- Provider interface/trait with standard methods
+- Factory pattern for provider instantiation  
+- Adapter pattern for each provider SDK
+- Configuration-driven provider selection
+- Support for provider capabilities (streaming, function calling)
+- Graceful provider fallback on error
 
-**Dependencies**: Task 1.1
+**Dependencies**: Task 1.1, Task 3.1
 
-**Implementation**:
+**Research Context**:
+Based on industry best practices:
+- Use unified API gateway pattern (similar to Conduit, AWS Multi-Provider GenAI Gateway)
+- Implement adapter pattern for each provider's SDK
+- Support Model Context Protocol (MCP) for standardization
+- Configuration via YAML/environment variables
+- Allow runtime provider switching
+
+**Provider Interface**:
 ```go
-type CopilotClient struct {
-    timeout time.Duration
+type AIProvider interface {
+    Name() string
+    Query(ctx context.Context, prompt string, opts QueryOptions) (*Response, error)
+    IsAuthenticated() bool
+    RequiresAuth() AuthInfo
+    Capabilities() ProviderCapabilities
 }
 
-func (c *CopilotClient) Query(prompt string) (string, error)
-func (c *CopilotClient) IsAuthenticated() bool
+type ProviderCapabilities struct {
+    Streaming      bool
+    FunctionCall   bool
+    MaxTokens      int
+    SupportsImages bool
+}
+
+type AuthInfo struct {
+    Type         string // "oauth", "apikey", "cli"
+    IsConfigured bool
+    HelpURL      string
+    Instructions string
+}
+
+type ProviderFactory struct {
+    providers map[string]AIProvider
+}
+
+func (f *ProviderFactory) Create(name string, config Config) (AIProvider, error)
+func (f *ProviderFactory) Register(name string, provider AIProvider) error
+func (f *ProviderFactory) List() []string
+```
+
+**Configuration**:
+```yaml
+# ~/.copilot-research/config.yaml
+providers:
+  primary: github-copilot
+  fallback: openai
+  
+  github-copilot:
+    enabled: true
+    auth_type: cli  # Uses gh CLI
+    timeout: 60s
+    
+  openai:
+    enabled: true
+    auth_type: apikey
+    api_key_env: OPENAI_API_KEY
+    model: gpt-4
+    timeout: 30s
+    
+  anthropic:
+    enabled: false
+    auth_type: apikey
+    api_key_env: ANTHROPIC_API_KEY
+    model: claude-3-5-sonnet
+    timeout: 30s
 ```
 
 **Tests**:
-- Mock `gh` command for testing
-- Handle authentication errors
-- Timeout works correctly
-- Parse output correctly
+- Factory creates providers correctly
+- Interface methods work consistently
+- Provider switching works
+- Configuration parsing correct
+- Fallback logic functions
 
 **Commit Template**:
 ```
-[Research] Implement GitHub Copilot integration
+[Providers] Implement multi-provider abstraction layer
 
-Created CopilotClient to execute gh copilot queries:
-- Runs gh copilot suggest with prompt
-- Captures and cleans output
-- Handles authentication and errors
-- Configurable timeout
+Created provider abstraction with:
+- Unified AIProvider interface
+- Factory pattern for instantiation
+- Adapter pattern for each provider
+- Configuration-driven selection
+- Capability detection
+- Fallback support
 
-Tests: Mock execution, error handling, timeout
+Supports GitHub Copilot, OpenAI, Anthropic.
+
+Tests: Factory, interface, config, fallback
 ```
 
 ---
 
-#### Task 5.2: Research Engine Core
+#### Task 5.2: GitHub Copilot Provider Implementation  
+**Status**: ⬜ Not Started  
+**Estimated**: 45 minutes  
+**Priority**: P0
+
+**Description**:
+Implement GitHub Copilot provider that wraps `gh copilot` CLI, handles authentication via multiple methods, and provides excellent user onboarding.
+
+**Acceptance Criteria**:
+- Execute `gh copilot suggest` with prompt
+- Support multiple authentication methods (priority order):
+  1. `COPILOT_GITHUB_TOKEN` environment variable
+  2. `GH_TOKEN` environment variable  
+  3. Existing `gh` CLI authentication
+  4. Interactive OAuth device flow
+- Detect authentication status before queries
+- Provide clear, actionable error messages
+- Handle subscription/permission errors gracefully
+- Beautiful onboarding flow for new users
+- Timeout after reasonable duration
+- Return clean markdown output
+
+**Dependencies**: Task 5.1
+
+**Authentication Research Context**:
+Based on CLI best practices:
+- Check credentials in priority order (COPILOT_GITHUB_TOKEN > GH_TOKEN > gh auth)
+- Use OAuth device flow for interactive authentication
+- Validate token has "Copilot Requests" permission
+- Fine-grained PATs required (classic tokens rejected)
+- Clear error messages with actionable solutions
+- Help users understand subscription requirements
+
+**Implementation**:
+```go
+type GitHubCopilotProvider struct {
+    timeout    time.Duration
+    authMethod string
+    token      string
+}
+
+func (g *GitHubCopilotProvider) Name() string { return "github-copilot" }
+
+func (g *GitHubCopilotProvider) Query(ctx context.Context, prompt string, opts QueryOptions) (*Response, error) {
+    // Execute gh copilot suggest with prompt
+    // Capture and parse output
+    // Handle errors with helpful messages
+}
+
+func (g *GitHubCopilotProvider) IsAuthenticated() bool {
+    // Check in priority order:
+    // 1. COPILOT_GITHUB_TOKEN env var
+    // 2. GH_TOKEN env var
+    // 3. gh auth status
+    // Return true if any valid
+}
+
+func (g *GitHubCopilotProvider) RequiresAuth() AuthInfo {
+    if g.IsAuthenticated() {
+        return AuthInfo{IsConfigured: true}
+    }
+    
+    return AuthInfo{
+        Type:         "oauth-device-flow",
+        IsConfigured: false,
+        HelpURL:      "https://github.com/features/copilot",
+        Instructions: `GitHub Copilot authentication required.
+
+Please authenticate using one of these methods:
+
+1. GitHub CLI (recommended):
+   gh auth login
+   
+2. Personal Access Token:
+   export COPILOT_GITHUB_TOKEN=ghp_your_token_here
+   
+3. Interactive device flow:
+   copilot-research auth login
+
+Note: You need an active GitHub Copilot subscription.
+Get one at https://github.com/features/copilot
+
+Once authenticated, run your command again.`,
+    }
+}
+
+func (g *GitHubCopilotProvider) Capabilities() ProviderCapabilities {
+    return ProviderCapabilities{
+        Streaming:      false,
+        FunctionCall:   true,  // Via MCP
+        MaxTokens:      8000,
+        SupportsImages: false,
+    }
+}
+
+// Authentication check with priority
+func (g *GitHubCopilotProvider) detectAuth() (string, string) {
+    // 1. Check COPILOT_GITHUB_TOKEN
+    if token := os.Getenv("COPILOT_GITHUB_TOKEN"); token != "" {
+        return "env:COPILOT_GITHUB_TOKEN", token
+    }
+    
+    // 2. Check GH_TOKEN
+    if token := os.Getenv("GH_TOKEN"); token != "" {
+        return "env:GH_TOKEN", token
+    }
+    
+    // 3. Check gh CLI authentication
+    cmd := exec.Command("gh", "auth", "status")
+    if cmd.Run() == nil {
+        return "gh-cli", ""
+    }
+    
+    return "none", ""
+}
+```
+
+**Error Messages** (following UX best practices):
+```
+❌ Authentication Required
+
+GitHub Copilot is not authenticated on this machine.
+
+How to fix:
+  1. Authenticate with GitHub CLI:
+     $ gh auth login
+     
+  2. Or set an environment variable:
+     $ export COPILOT_GITHUB_TOKEN=<your-token>
+     
+  3. Or use our interactive setup:
+     $ copilot-research auth login
+
+Need a subscription?
+  Visit https://github.com/features/copilot to sign up.
+
+---
+
+❌ Subscription Required  
+
+Your GitHub account is authenticated but doesn't have access to Copilot.
+
+To use this tool, you need:
+  • GitHub Copilot Individual ($10/month)
+  • GitHub Copilot Business (via organization)
+  • GitHub Copilot Enterprise (via organization)
+
+Learn more: https://github.com/features/copilot
+
+---
+
+❌ Permission Error
+
+Your token is valid but missing the "Copilot Requests" permission.
+
+To fix:
+  1. Create a new Personal Access Token at:
+     https://github.com/settings/tokens/new
+     
+  2. Enable "Copilot Requests" permission
+  
+  3. Set the token:
+     $ export COPILOT_GITHUB_TOKEN=<your-new-token>
+
+Note: Classic tokens (ghp_*) are not supported for security reasons.
+Use fine-grained PATs instead.
+```
+
+**Onboarding Flow**:
+```
+$ copilot-research "query"
+
+👋 Welcome to Copilot Research!
+
+To get started, we need to authenticate with GitHub Copilot.
+
+You'll need:
+  ✓ GitHub account
+  ✓ Active Copilot subscription ($10/month)
+  ✓ Terminal access
+
+Choose authentication method:
+  [1] GitHub CLI (recommended) - Uses existing gh authentication
+  [2] Personal Access Token - Set COPILOT_GITHUB_TOKEN
+  [3] Interactive OAuth - Browser-based device flow
+  [Q] Quit
+
+Selection: _
+```
+
+**Tests**:
+- Mock `gh` command for testing
+- Authentication priority order correct
+- Error messages clear and actionable
+- Onboarding flow guides users
+- Timeout works correctly
+- Parse output correctly
+- Permission validation works
+
+**Commit Template**:
+```
+[Providers] Implement GitHub Copilot provider with auth
+
+Created GitHubCopilotProvider with:
+- Multi-method authentication (PAT, gh CLI, OAuth)
+- Priority-based credential detection
+- Clear, actionable error messages
+- Beautiful onboarding flow for new users
+- Subscription and permission validation
+- Configurable timeout
+
+Follows CLI authentication best practices.
+
+Tests: Auth methods, error messages, onboarding, execution
+```
+
+---
+
+#### Task 5.3: OpenAI Provider Implementation
+**Status**: ⬜ Not Started  
+**Estimated**: 45 minutes  
+**Priority**: P1
+
+**Description**:
+Implement OpenAI provider using official SDK with API key authentication and GPT-4 support.
+
+**Acceptance Criteria**:
+- Use OpenAI official Go SDK
+- API key from environment variable or config
+- Support multiple models (GPT-4, GPT-4-turbo, etc.)
+- Handle rate limiting and errors
+- Clear error messages for missing API key
+- Streaming support (optional)
+
+**Dependencies**: Task 5.1
+
+**Implementation**:
+```go
+type OpenAIProvider struct {
+    client  *openai.Client
+    model   string
+    timeout time.Duration
+    apiKey  string
+}
+
+func (o *OpenAIProvider) Name() string { return "openai" }
+
+func (o *OpenAIProvider) Query(ctx context.Context, prompt string, opts QueryOptions) (*Response, error) {
+    // Use OpenAI SDK to query
+}
+
+func (o *OpenAIProvider) IsAuthenticated() bool {
+    return o.apiKey != ""
+}
+
+func (o *OpenAIProvider) RequiresAuth() AuthInfo {
+    if o.IsAuthenticated() {
+        return AuthInfo{IsConfigured: true}
+    }
+    
+    return AuthInfo{
+        Type:         "apikey",
+        IsConfigured: false,
+        HelpURL:      "https://platform.openai.com/api-keys",
+        Instructions: `OpenAI API key required.
+
+Get your API key:
+  1. Visit https://platform.openai.com/api-keys
+  2. Create a new API key
+  3. Set it in your environment:
+     export OPENAI_API_KEY=sk-...
+     
+Or add to config:
+  copilot-research config set providers.openai.api_key sk-...
+
+Pricing: https://openai.com/pricing`,
+    }
+}
+
+func (o *OpenAIProvider) Capabilities() ProviderCapabilities {
+    return ProviderCapabilities{
+        Streaming:      true,
+        FunctionCall:   true,
+        MaxTokens:      128000, // GPT-4-turbo
+        SupportsImages: true,   // GPT-4-vision
+    }
+}
+```
+
+**Configuration**:
+```yaml
+providers:
+  openai:
+    api_key_env: OPENAI_API_KEY
+    model: gpt-4-turbo-preview
+    temperature: 0.7
+    max_tokens: 4000
+```
+
+**Error Messages**:
+```
+❌ OpenAI API Key Missing
+
+Set your OpenAI API key:
+  $ export OPENAI_API_KEY=sk-...
+
+Get a key at https://platform.openai.com/api-keys
+
+---
+
+❌ OpenAI Rate Limit Exceeded
+
+You've hit OpenAI's rate limit. Please wait a moment.
+
+Retry in: 30 seconds
+
+Upgrade your plan at https://platform.openai.com/settings
+```
+
+**Tests**:
+- API key detection works
+- Query execution successful
+- Rate limit handling
+- Error messages helpful
+- Model selection works
+
+**Commit Template**:
+```
+[Providers] Add OpenAI provider implementation
+
+Implemented OpenAIProvider with:
+- Official OpenAI SDK integration
+- API key authentication
+- Multiple model support
+- Rate limiting handling
+- Clear error messages
+- Streaming capability
+
+Tests: Auth, querying, rate limits, errors
+```
+
+---
+
+#### Task 5.4: Anthropic Claude Provider Implementation
+**Status**: ⬜ Not Started  
+**Estimated**: 45 minutes  
+**Priority**: P2
+
+**Description**:
+Implement Anthropic Claude provider with API key authentication and Claude 3 support.
+
+**Acceptance Criteria**:
+- Use Anthropic official SDK
+- API key from environment or config  
+- Support Claude 3 models (Opus, Sonnet, Haiku)
+- Handle rate limiting
+- Clear error messages
+- Support streaming (optional)
+
+**Dependencies**: Task 5.1
+
+**Implementation**:
+```go
+type AnthropicProvider struct {
+    client  *anthropic.Client
+    model   string
+    timeout time.Duration
+    apiKey  string
+}
+
+func (a *AnthropicProvider) Name() string { return "anthropic" }
+
+func (a *AnthropicProvider) Query(ctx context.Context, prompt string, opts QueryOptions) (*Response, error) {
+    // Use Anthropic SDK
+}
+
+func (a *AnthropicProvider) IsAuthenticated() bool {
+    return a.apiKey != ""
+}
+
+func (a *AnthropicProvider) RequiresAuth() AuthInfo {
+    if a.IsAuthenticated() {
+        return AuthInfo{IsConfigured: true}
+    }
+    
+    return AuthInfo{
+        Type:         "apikey",
+        IsConfigured: false,
+        HelpURL:      "https://console.anthropic.com/",
+        Instructions: `Anthropic API key required.
+
+Get your API key:
+  1. Visit https://console.anthropic.com/
+  2. Create an account
+  3. Generate API key
+  4. Set in environment:
+     export ANTHROPIC_API_KEY=sk-ant-...
+
+Or add to config:
+  copilot-research config set providers.anthropic.api_key sk-ant-...`,
+    }
+}
+
+func (a *AnthropicProvider) Capabilities() ProviderCapabilities {
+    return ProviderCapabilities{
+        Streaming:      true,
+        FunctionCall:   true,
+        MaxTokens:      200000, // Claude 3
+        SupportsImages: true,
+    }
+}
+```
+
+**Tests**:
+- Authentication detection
+- Query execution
+- Error handling
+- Model selection
+
+**Commit Template**:
+```
+[Providers] Add Anthropic Claude provider
+
+Implemented AnthropicProvider with:
+- Official Anthropic SDK
+- API key authentication  
+- Claude 3 model support
+- Streaming capability
+- Clear error messages
+
+Tests: Auth, querying, errors
+```
+
+---
+
+#### Task 5.5: Provider Selection and Fallback Logic
+**Status**: ⬜ Not Started  
+**Estimated**: 30 minutes  
+**Priority**: P1
+
+**Description**:
+Implement intelligent provider selection with automatic fallback on authentication or query failures.
+
+**Acceptance Criteria**:
+- Try primary provider first
+- Fall back to secondary on auth failure
+- Fall back on query errors (optional)
+- Log provider switching
+- User notification of fallback
+- Configurable fallback behavior
+
+**Dependencies**: Task 5.2, Task 5.3, Task 5.4
+
+**Implementation**:
+```go
+type ProviderManager struct {
+    factory  *ProviderFactory
+    config   Config
+    primary  string
+    fallback string
+}
+
+func (pm *ProviderManager) Query(ctx context.Context, prompt string, opts QueryOptions) (*Response, error) {
+    // Try primary provider
+    provider, err := pm.getProvider(pm.primary)
+    if err == nil && provider.IsAuthenticated() {
+        resp, err := provider.Query(ctx, prompt, opts)
+        if err == nil {
+            return resp, nil
+        }
+        log.Printf("Primary provider %s failed: %v", pm.primary, err)
+    }
+    
+    // Try fallback
+    if pm.fallback != "" {
+        log.Printf("Falling back to %s", pm.fallback)
+        provider, err := pm.getProvider(pm.fallback)
+        if err == nil && provider.IsAuthenticated() {
+            resp, err := provider.Query(ctx, prompt, opts)
+            if err == nil {
+                fmt.Printf("ℹ️  Used %s (primary unavailable)\n", pm.fallback)
+                return resp, nil
+            }
+        }
+    }
+    
+    // All providers failed
+    return nil, fmt.Errorf("all providers failed")
+}
+
+func (pm *ProviderManager) CheckAuthentication() ([]string, []string) {
+    authenticated := []string{}
+    unauthenticated := []string{}
+    
+    for _, name := range pm.factory.List() {
+        provider, _ := pm.getProvider(name)
+        if provider.IsAuthenticated() {
+            authenticated = append(authenticated, name)
+        } else {
+            unauthenticated = append(unauthenticated, name)
+        }
+    }
+    
+    return authenticated, unauthenticated
+}
+```
+
+**Configuration**:
+```yaml
+providers:
+  primary: github-copilot
+  fallback: openai
+  auto_fallback: true  # Automatically try fallback on failure
+  notify_fallback: true  # Show message when falling back
+```
+
+**User Messages**:
+```
+ℹ️  GitHub Copilot unavailable, using OpenAI GPT-4
+
+⚠️  Primary provider failed, trying fallback...
+
+❌ No authenticated providers available
+
+Please authenticate at least one provider:
+  • GitHub Copilot: gh auth login
+  • OpenAI: export OPENAI_API_KEY=...
+  • Anthropic: export ANTHROPIC_API_KEY=...
+```
+
+**Tests**:
+- Primary provider used when available
+- Fallback works on auth failure
+- Fallback works on query failure
+- User notifications display
+- All providers failed handled
+
+**Commit Template**:
+```
+[Providers] Add provider selection and fallback logic
+
+Implemented intelligent provider management:
+- Try primary provider first
+- Automatic fallback on failure
+- User notifications
+- Configurable behavior
+- Authentication status checking
+
+Ensures queries succeed when any provider works.
+
+Tests: Primary, fallback, notifications, config
+```
+
+---
+
+#### Task 5.6: Auth Command for User Authentication
+**Status**: ⬜ Not Started  
+**Estimated**: 45 minutes  
+**Priority**: P1
+
+**Description**:
+Add `auth` CLI command to help users authenticate providers interactively.
+
+**Acceptance Criteria**:
+- `auth status` - Show authentication status
+- `auth login` - Interactive authentication
+- `auth test` - Test provider connectivity
+- Beautiful table output
+- Guides users through setup
+- Validates tokens
+
+**Dependencies**: Task 5.5, Task 7.1
+
+**Commands**:
+```bash
+copilot-research auth status
+copilot-research auth login [provider]
+copilot-research auth test [provider]
+copilot-research auth logout [provider]
+```
+
+**Output Examples**:
+```
+$ copilot-research auth status
+
+Authentication Status
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Provider        Status          Method
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+github-copilot  ✅ Authenticated  gh CLI
+openai          ❌ Not configured
+anthropic       ❌ Not configured
+
+Primary: github-copilot
+Fallback: openai (not configured)
+
+To authenticate OpenAI:
+  export OPENAI_API_KEY=sk-...
+  
+Get a key: https://platform.openai.com/api-keys
+
+---
+
+$ copilot-research auth login
+
+Choose a provider to authenticate:
+  [1] GitHub Copilot (recommended)
+  [2] OpenAI  
+  [3] Anthropic Claude
+  [Q] Quit
+
+Selection: 1
+
+Authenticating GitHub Copilot...
+
+Opening browser for GitHub authentication...
+✓ Authentication successful!
+
+You're all set! Try:
+  copilot-research "How do Swift actors work?"
+
+---
+
+$ copilot-research auth test github-copilot
+
+Testing GitHub Copilot...
+✓ Authentication valid
+✓ Subscription active
+✓ API accessible
+✓ Test query successful
+
+Provider ready to use!
+```
+
+**Tests**:
+- Status shows correct information
+- Login flow works
+- Test validates connectivity
+- Output formatted nicely
+
+**Commit Template**:
+```
+[CLI] Add auth command for provider authentication
+
+Implemented auth management:
+- status: Show authentication status
+- login: Interactive authentication
+- test: Validate provider connectivity
+- logout: Clear credentials
+
+Beautiful table output guides users through setup.
+
+Tests: Status, login, test, formatting
+```
+
+---
+
+#### Task 5.7: Research Engine Core
 **Status**: ⬜ Not Started  
 **Estimated**: 45 minutes  
 **Priority**: P0
@@ -1643,32 +2364,32 @@ Ready for v1.0.0 release.
 
 ## Task Summary
 
-**Total Tasks**: 27
+**Total Tasks**: 33
 
 ### By Phase:
 - Phase 1 (Foundation): 3 tasks
 - Phase 2 (Database): 2 tasks
 - Phase 3 (Knowledge Management): 5 tasks
 - Phase 4 (Prompts): 2 tasks
-- Phase 5 (Research Engine): 2 tasks
+- Phase 5 (Multi-Provider Authentication & Integration): 7 tasks
 - Phase 6 (UI): 2 tasks
-- Phase 7 (CLI): 5 tasks
+- Phase 7 (CLI): 6 tasks
 - Phase 8 (Polish): 4 tasks
 
 ### By Priority:
-- P0 (Blocker): 14 tasks
-- P1 (High): 11 tasks
+- P0 (Blocker): 16 tasks
+- P1 (High): 13 tasks
 - P2 (Medium): 4 tasks
 
-**Estimated Total Time**: ~15 hours
+**Estimated Total Time**: ~20 hours
 
 ---
 
 ## Progress Tracking
 
-**Completed**: 6/27 (22%)  
-**In Progress**: 0/27 (0%)  
-**Not Started**: 21/27 (78%)
+**Completed**: 6/33 (18%)  
+**In Progress**: 0/33 (0%)  
+**Not Started**: 27/33 (82%)
 
 ---
 
@@ -1683,4 +2404,27 @@ Ready for v1.0.0 release.
 ---
 
 **Last Updated**: 2025-11-17  
-**Next Task**: Task 3.1 - Knowledge Base Structure and Models
+**Next Task**: Task 3.2 - Knowledge Manager Implementation
+
+---
+
+## Key Design Decisions
+
+### Multi-Provider Architecture
+- **Pattern**: Abstraction layer with factory + adapter patterns
+- **Rationale**: Allows easy addition of new AI providers without changing core logic
+- **Based on**: Industry best practices from LiteLLM, AISuite, AWS Multi-Provider Gateway
+- **Authentication**: Priority-based credential checking with clear error messages
+- **Fallback**: Automatic failover to secondary provider on authentication or query failures
+
+### Knowledge Management
+- **Storage**: Git-based versioning for audit trail and rollback
+- **Format**: Markdown with YAML frontmatter for human readability  
+- **Consolidation**: Automatic deduplication and content merging
+- **Rules**: YAML-based user preferences for content filtering
+
+### User Experience
+- **Onboarding**: Friendly, guided authentication flow with clear instructions
+- **Error Messages**: Specific, actionable, empathetic (following UX best practices)
+- **Feedback**: Live progress updates during research with Bubble Tea
+- **Documentation**: Extensive examples and troubleshooting guides
