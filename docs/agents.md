@@ -258,6 +258,93 @@ gh auth status
 - Cross-reference contradictions
 - Update knowledge base with learnings
 
+### 2025-11-17: Knowledge Management System
+
+**Git-Based Knowledge Versioning**:
+- Store all knowledge in `~/.copilot-research/knowledge/` with Git tracking
+- Automatic commits for every knowledge change with descriptive messages
+- View history of any topic: when info changed and why
+- Rollback capability if needed
+- Separate repos for app code vs knowledge (knowledge is user data)
+
+**Knowledge Structure**:
+```
+~/.copilot-research/knowledge/
+├── .git/                     # Auto-managed Git repo
+├── topics/                   # Topic-specific knowledge
+│   ├── swift-concurrency.md
+│   ├── swiftui-patterns.md
+│   └── ...
+├── patterns/                 # Learned patterns
+│   ├── common-errors.md
+│   └── best-practices.md
+├── rules/                    # User preferences
+│   ├── preferences.yaml
+│   └── exclusions.yaml
+└── MANIFEST.yaml            # Central registry
+```
+
+**Markdown + YAML Frontmatter**:
+- Human-readable and editable
+- Version control friendly (good diffs)
+- Easy to parse programmatically
+- Standard format used by many tools
+```yaml
+---
+topic: swift-concurrency
+version: 3
+confidence: 0.95
+tags: [swift, concurrency, actors]
+source: https://docs.swift.org/
+created: 2025-11-17T12:00:00Z
+updated: 2025-11-17T14:00:00Z
+---
+
+# Swift Concurrency
+[Content...]
+```
+
+**Deduplication Strategy**:
+- Generate SHA-256 ID from topic + content
+- Compare new knowledge against existing
+- If similar (>90% match), merge instead of duplicate
+- Keep highest confidence version
+- Preserve all unique information
+- Update version number on merge
+
+**Auto-Learning from Research**:
+- Analyze successful research results
+- Extract key topics and patterns
+- Calculate confidence score based on source quality
+- Prompt user for approval before storing
+- Build knowledge base over time automatically
+
+**Rule System for Preferences**:
+```yaml
+rules:
+  - type: exclude
+    pattern: "Model View Controller|MVC"
+    reason: "Using MV architecture instead"
+  
+  - type: prefer
+    pattern: "Swift Testing"
+    over: "XCTest"
+```
+
+**Key Decisions**:
+- User home dir (`~/`) not project dir (knowledge is global across projects)
+- Git for versioning (proven, reliable, no custom format)
+- Markdown for human readability (can edit manually)
+- YAML frontmatter for metadata (standard, well-supported)
+- Automatic consolidation to prevent bloat
+
+**Testing Approach**:
+- Test knowledge CRUD operations
+- Test frontmatter parsing/serialization
+- Test Git operations (commit, history, diff)
+- Test deduplication algorithm
+- Test rule matching and application
+
 ---
 
 *Keep updated as you discover patterns and solve problems.*
