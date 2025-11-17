@@ -1153,6 +1153,88 @@ func writeOutput(filename string, content string) error {
 - Fail fast with helpful error messages
 - Test helper functions, not full command execution
 
+### 2025-11-17: OpenAI Provider Implementation
+
+**OpenAI SDK Integration**:
+- Use `github.com/sashabaranov/go-openai` (most popular Go OpenAI SDK)
+- Create client with `openai.NewClient(apiKey)`
+- Check for API key in environment: `os.Getenv("OPENAI_API_KEY")`
+
+**ChatCompletion Pattern**:
+```go
+req := openai.ChatCompletionRequest{
+    Model: model,
+    Messages: []openai.ChatCompletionMessage{
+        {
+            Role:    openai.ChatMessageRoleUser,
+            Content: prompt,
+        },
+    },
+    MaxTokens:   maxTokens,
+    Temperature: temperature,
+    TopP:        topP,
+}
+
+resp, err := client.CreateChatCompletion(ctx, req)
+```
+
+**Key Implementation Patterns**:
+1. **Lazy Client Initialization**: Only create client if API key exists
+   - Prevents errors on provider creation
+   - Client created in constructor if authenticated
+
+2. **Query Options Override**: Allow request-level overrides
+   - Default model from provider constructor
+   - Override with opts.Model if provided
+   - Same for MaxTokens, Temperature, TopP
+
+3. **Token Usage Tracking**: Extract from response
+   ```go
+   TokensUsed: TokenUsage{
+       Prompt:     resp.Usage.PromptTokens,
+       Completion: resp.Usage.CompletionTokens,
+       Total:      resp.Usage.TotalTokens,
+   }
+   ```
+
+4. **Error Classification**: Detect specific error types
+   - Rate limit errors (contains "rate limit" or "429")
+   - Timeout errors (context.DeadlineExceeded)
+   - Authentication errors
+   - Return helpful error messages for each
+
+**Response Structure**:
+- Extract content from `resp.Choices[0].Message.Content`
+- Check for empty choices array
+- Include finish_reason in metadata
+- Track duration with time.Since()
+
+**Testing Patterns**:
+- Test with and without API key (env variable)
+- Don't make real API calls in unit tests
+- Test authentication check
+- Test error handling paths
+- Use os.Setenv/Unsetenv for API key tests
+
+**Common Mistakes Avoided**:
+1. Creating client without API key → Check first, nil if not present
+2. Not handling empty choices → Check len(resp.Choices) > 0
+3. Hardcoded values → Use QueryOptions for flexibility
+4. Type mismatch with OpenAI SDK → Convert float64 to float32
+5. Missing timeout → Use context.WithTimeout
+
+**Dependencies Added**:
+- `go get github.com/sashabaranov/go-openai`
+- Latest version automatically selected
+
+**For Future AI Agents**:
+- Follow same pattern for other API providers (Anthropic, etc.)
+- Always check authentication before creating client
+- Extract token usage from responses when available
+- Classify errors for better user experience
+- Test with environment variables (set/unset pattern)
+- Use QueryOptions to override defaults
+
 ---
 
 *Keep updated as you discover patterns and solve problems.*
