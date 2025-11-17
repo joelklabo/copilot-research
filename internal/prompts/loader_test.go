@@ -300,3 +300,73 @@ func TestPromptLoader_MissingFrontmatter(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "frontmatter")
 }
+
+func TestAllPromptTemplates(t *testing.T) {
+	// Test that all required prompt templates exist and are valid
+	promptsDir := filepath.Join("..", "..", "prompts")
+	loader := NewPromptLoader(promptsDir)
+	
+	requiredPrompts := []struct {
+		name        string
+		description string
+		hasMode     bool
+	}{
+		{"default", "Default research prompt", false},
+		{"quick", "Quick research prompt", true},
+		{"deep-dive", "Comprehensive deep-dive", true},
+		{"compare", "Comparison research prompt", true},
+		{"synthesis", "Synthesis research prompt", true},
+	}
+	
+	for _, req := range requiredPrompts {
+		t.Run(req.name, func(t *testing.T) {
+			prompt, err := loader.Load(req.name)
+			require.NoError(t, err, "Failed to load %s prompt", req.name)
+			
+			// Validate basic fields
+			assert.Equal(t, req.name, prompt.Name)
+			assert.NotEmpty(t, prompt.Description)
+			assert.NotEmpty(t, prompt.Version)
+			assert.NotEmpty(t, prompt.Template)
+			
+			// Validate template variables
+			assert.Contains(t, prompt.Template, "{{query}}", "Prompt should have {{query}} variable")
+			assert.Contains(t, prompt.Template, "{{mode}}", "Prompt should have {{mode}} variable")
+			
+			// Validate it has structure
+			assert.Contains(t, strings.ToLower(prompt.Template), "research", "Prompt should mention research")
+			
+			// Mode-specific prompts should have mode field
+			if req.hasMode {
+				assert.NotEmpty(t, prompt.Mode, "Mode-specific prompt should have mode field")
+			}
+		})
+	}
+}
+
+func TestPromptTemplateVariableSubstitution(t *testing.T) {
+	// Test that each prompt template properly substitutes variables
+	promptsDir := filepath.Join("..", "..", "prompts")
+	loader := NewPromptLoader(promptsDir)
+	
+	prompts := []string{"default", "quick", "deep-dive", "compare", "synthesis"}
+	
+	for _, name := range prompts {
+		t.Run(name, func(t *testing.T) {
+			prompt, err := loader.Load(name)
+			require.NoError(t, err)
+			
+			vars := map[string]string{
+				"query": "How do Swift actors work?",
+				"mode":  "test",
+			}
+			
+			rendered := loader.Render(prompt, vars)
+			
+			// Verify substitution worked
+			assert.Contains(t, rendered, "How do Swift actors work?")
+			assert.NotContains(t, rendered, "{{query}}")
+			assert.NotContains(t, rendered, "{{mode}}")
+		})
+	}
+}
