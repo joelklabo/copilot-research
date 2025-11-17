@@ -1848,7 +1848,7 @@ Tests: Rendering, style application
 ---
 
 #### Task 6.2: Main Research UI Model
-**Status**: ⬜ Not Started  
+**Status**: 🔄 In Progress  
 **Estimated**: 60 minutes  
 **Priority**: P0
 
