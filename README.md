@@ -32,6 +32,9 @@ copilot-research "iOS 26 new APIs" --mode deep
 
 # See history
 copilot-research history
+
+# Check authentication status
+copilot-research auth status
 ```
 
 ## Installation
@@ -49,95 +52,13 @@ go install github.com/joelklabo/copilot-research@latest
 ### Download binary
 Download from [releases](https://github.com/joelklabo/copilot-research/releases)
 
-## Usage
+## Detailed Usage
 
-### Basic Research
-```bash
-copilot-research "What are Swift 6 actors?"
-```
-
-### Research Modes
-- `--mode quick` - Fast overview (default)
-- `--mode deep` - Deep dive with examples
-- `--mode compare` - Compare multiple approaches
-- `--mode synthesis` - Synthesize from multiple sources
-
-### Input Sources
-```bash
-# String
-copilot-research "topic"
-
-# File
-copilot-research --input file.txt
-
-# Stdin
-echo "topic" | copilot-research
-```
-
-### Output Options
-```bash
-# Save to file
-copilot-research "topic" --output report.md
-
-# JSON format
-copilot-research "topic" --json
-
-# Quiet mode (no UI)
-copilot-research "topic" --quiet
-```
-
-### History & Learning
-```bash
-# View history
-copilot-research history
-
-# Search history
-copilot-research history --search "Swift"
-
-# Stats
-copilot-research stats
-
-# Clear history
-copilot-research history --clear
-```
-
-## Configuration
-
-Config file: `~/.copilot-research/config.yaml`
-
-```yaml
-# Default mode
-default_mode: quick
-
-# Database path
-db_path: ~/.copilot-research/research.db
-
-# Prompt directory
-prompt_dir: ~/.copilot-research/prompts
-
-# Active prompt
-active_prompt: default
-
-# Output preferences
-output:
-  format: markdown
-  color: true
-```
+For comprehensive usage instructions, examples, and command references, please see [docs/USAGE.md](docs/USAGE.md).
 
 ## Custom Prompts
 
-Create custom prompts in `~/.copilot-research/prompts/`:
-
-```bash
-# List available prompts
-copilot-research prompts list
-
-# Use specific prompt
-copilot-research "topic" --prompt claude
-
-# Set default prompt
-copilot-research config set active_prompt claude
-```
+Create custom prompts in `~/.copilot-research/prompts/`. For more details on the prompt system, see [docs/PROMPTS.md](docs/PROMPTS.md).
 
 ## Architecture
 
@@ -181,8 +102,8 @@ Copilot Research uses a plugin-based provider system that supports multiple AI b
 
 Currently implemented:
 - **GitHub Copilot** - Via `gh copilot` CLI (default)
-- **OpenAI** - Coming soon
-- **Anthropic Claude** - Coming soon
+- **OpenAI** - Fully implemented
+- **Anthropic Claude** - Fully implemented
 
 ### Provider Configuration
 
@@ -235,7 +156,7 @@ copilot-research "topic"
 copilot-research "topic" --provider openai
 
 # Check authentication status
-copilot-research providers status
+copilot-research auth status
 ```
 
 ### Implementing New Providers
@@ -300,3 +221,6 @@ Built with:
 ---
 
 **Made with ❤️ by Joel Klabo**
+
+<!-- GIF/Screenshot Placeholder -->
+_Add animated GIFs or screenshots here to showcase the UI in action._
