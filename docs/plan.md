@@ -214,9 +214,10 @@ Tests: Manual testing with gh copilot
 ### Phase 2: Core Database Layer
 
 #### Task 2.1: Database Models and Schema
-**Status**: 🚧 In Progress  
+**Status**: ✅ Complete  
 **Estimated**: 30 minutes  
-**Priority**: P0
+**Priority**: P0  
+**Commit**: 963cdd7
 
 **Description**:
 Define Go structs for data models and SQLite schema for storing research sessions, learned patterns, and statistics.
@@ -313,7 +314,7 @@ Tests: Model validation, JSON marshaling
 ---
 
 #### Task 2.2: SQLite Database Implementation
-**Status**: ⬜ Not Started  
+**Status**: 🚧 In Progress  
 **Estimated**: 45 minutes  
 **Priority**: P0
 
