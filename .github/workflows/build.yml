@@ -1,0 +1,48 @@
+name: Go Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        arch: [amd64, arm64]
+        exclude: # Exclude unsupported combinations
+          - os: windows-latest
+            arch: arm64
+          - os: ubuntu-latest
+            arch: arm64 # Assuming no native arm64 runners for ubuntu-latest yet, or cross-compilation is needed
+          - os: macos-latest
+            arch: amd64 # Prefer native arm64 for macos-latest if available, or cross-compile
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+
+    - name: Build
+      env:
+        GOOS: ${{ matrix.os == 'ubuntu-latest' && 'linux' || matrix.os == 'macos-latest' && 'darwin' || 'windows' }}
+        GOARCH: ${{ matrix.arch }}
+      run: |
+        BINARY_NAME="copilot-research"
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          BINARY_NAME="${BINARY_NAME}.exe"
+        fi
+        go build -v -o ./bin/${{ env.GOOS }}/${{ env.GOARCH }}/${BINARY_NAME} -ldflags="-s -w" ./main.go
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: copilot-research-${{ env.GOOS }}-${{ env.GOARCH }}
+        path: ./bin/${{ env.GOOS }}/${{ env.GOARCH }}/
