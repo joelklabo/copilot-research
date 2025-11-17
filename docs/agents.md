@@ -820,6 +820,88 @@ func (e *Engine) Research(ctx context.Context, opts ResearchOptions, progress ch
 - Use ProviderManager for provider abstraction and fallback
 - Test all error paths including context cancellation
 
+### 2025-11-17: Bubble Tea UI Components
+
+**Bubble Tea Integration**:
+- Use Charm's Bubble Tea for terminal UI (tea.Model interface)
+- Lipgloss for styling (colors, borders, padding, margins)
+- Bubbles for pre-built components (spinner, viewport, etc.)
+
+**Spinner Component Pattern**:
+```go
+type SpinnerModel struct {
+    spinner spinner.Model  // From bubbles/spinner
+    message string
+    styles  Styles
+}
+
+// Implements tea.Model
+func (m *SpinnerModel) Init() tea.Cmd
+func (m *SpinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd)
+func (m *SpinnerModel) View() string
+```
+
+**Key Implementation Patterns**:
+1. **Init/Update/View Cycle**: Bubble Tea's core pattern
+   - Init() returns initial command (spinner.Tick)
+   - Update() handles messages and returns (model, cmd)
+   - View() renders string output
+
+2. **Styles Organization**: Centralize all styles in one place
+   - Create Styles struct with all lipgloss.Style fields
+   - DefaultStyles() factory function
+   - Reuse styles across components
+
+3. **Spinner Message Display**: SetMessage() for dynamic updates
+   - Format: `[spinner] message`
+   - Empty message shows just spinner
+   - Message styled with MessageStyle
+
+4. **Color Scheme**:
+   - Title: 205 (magenta/pink)
+   - Spinner: 69 (blue)
+   - Message: 241 (gray)
+   - Border: 63 (purple)
+   - Error: 196 (red)
+   - Success: 42 (green)
+
+**Testing UI Components**:
+- Test Init() returns non-nil command
+- Test Update() with messages
+- Test View() returns non-empty string
+- Test SetMessage() changes display
+- Verify tea.Model interface implementation
+- Test style rendering with Render()
+
+**Lipgloss Styling Patterns**:
+```go
+Style := lipgloss.NewStyle().
+    Bold(true).
+    Foreground(lipgloss.Color("205")).
+    Border(lipgloss.RoundedBorder()).
+    Padding(1, 2).
+    MarginTop(1)
+```
+
+**Component Reusability**:
+- Styles separate from components
+- Components accept styles in constructor or use defaults
+- Easy to theme by swapping styles
+- Components focus on behavior, styles on appearance
+
+**Dependencies Added**:
+- `github.com/charmbracelet/bubbletea` - TUI framework
+- `github.com/charmbracelet/bubbles` - Pre-built components
+- `github.com/charmbracelet/lipgloss` - Styling (already included)
+
+**For Future AI Agents**:
+- Follow Bubble Tea's Init/Update/View pattern strictly
+- Always implement tea.Model interface for components
+- Centralize styles for consistency
+- Use bubbles components when available (spinner, viewport, list, etc.)
+- Test View() output contains expected text
+- Colors are terminal color codes (0-255)
+
 ---
 
 *Keep updated as you discover patterns and solve problems.*
