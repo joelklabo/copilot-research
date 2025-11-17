@@ -2087,7 +2087,7 @@ Tests: List, search, filter, clear
 ---
 
 #### Task 7.4: Stats Command
-**Status**: ⬜ Not Started  
+**Status**: 🚧 In Progress  
 **Estimated**: 20 minutes  
 **Priority**: P2
 
@@ -2144,7 +2144,7 @@ Tests: Calculation, formatting, empty DB
 ---
 
 #### Task 7.5: Config Command
-**Status**: ⬜ Not Started  
+**Status**: 🚧 In Progress  
 **Estimated**: 25 minutes  
 **Priority**: P2
 

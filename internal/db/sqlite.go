@@ -10,6 +10,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// Compile-time check that SQLiteDB implements the DB interface
+var _ DB = (*SQLiteDB)(nil)
+
 //go:embed schema.sql
 var schemaSQL string
 
@@ -20,7 +23,7 @@ type SQLiteDB struct {
 }
 
 // NewSQLiteDB creates a new SQLite database connection
-func NewSQLiteDB(path string) (*SQLiteDB, error) {
+func NewSQLiteDB(path string) (DB, error) {
 	db, err := sql.Open("sqlite3", path+"?_journal_mode=WAL&_timeout=5000")
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)

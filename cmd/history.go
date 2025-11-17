@@ -36,7 +36,7 @@ Examples:
 }
 
 func init() {
-	rootCmd.AddCommand(researchHistoryCmd)
+	RootCmd.AddCommand(researchHistoryCmd)
 	
 	researchHistoryCmd.Flags().StringVarP(&historySearchQuery, "search", "s", "", "search for query text")
 	researchHistoryCmd.Flags().StringVarP(&historyFilterMode, "mode", "m", "", "filter by mode")
@@ -73,7 +73,7 @@ database, err := db.NewSQLiteDB(dbPath)
 	return handleListSessions(database, historySearchQuery, historyFilterMode, historyLimitNum)
 }
 
-func handleClearHistory(database *db.SQLiteDB) error {
+func handleClearHistory(database db.DB) error {
 	// Confirm deletion
 	fmt.Print("⚠️  This will delete all research history. Are you sure? (yes/no): ")
 	var response string
@@ -92,7 +92,7 @@ func handleClearHistory(database *db.SQLiteDB) error {
 	return nil
 }
 
-func handleShowSession(database *db.SQLiteDB, id int64) error {
+func handleShowSession(database db.DB, id int64) error {
 	session, err := database.GetSession(id)
 	if err != nil {
 		return fmt.Errorf("session not found: %w", err)
@@ -114,7 +114,7 @@ func handleShowSession(database *db.SQLiteDB, id int64) error {
 	return nil
 }
 
-func handleListSessions(database *db.SQLiteDB, search, mode string, limit int) error {
+func handleListSessions(database db.DB, search, mode string, limit int) error {
 	var sessions []*db.ResearchSession
 	var err error
 	

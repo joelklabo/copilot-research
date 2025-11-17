@@ -12,20 +12,20 @@ import (
 )
 
 var (
-	cfgFile    string
-	outputFile string
-	quiet      bool
-	jsonOutput bool
-	mode       string
-	promptName string
-	noStore    bool
+	CfgFile    string
+	OutputFile string
+	Quiet      bool
+	JSONOutput bool
+	Mode       string
+	PromptName string
+	NoStore    bool
 
-	AppConfig *config.Config // Added global config
-	AppProviderManager *provider.ProviderManager // Added global provider manager
+	AppConfig *config.Config
+	AppProviderManager *provider.ProviderManager
 )
 
-// rootCmd represents the base command
-var rootCmd = &cobra.Command{
+// RootCmd represents the base command
+var RootCmd = &cobra.Command{
 	Use:   "copilot-research",
 	Short: "Beautiful CLI for AI-powered research",
 	Long: `Copilot Research is a command-line tool that helps you conduct 
@@ -40,41 +40,42 @@ Example usage:
 
 // Execute runs the root command
 func Execute() error {
-	return rootCmd.Execute()
+	return RootCmd.Execute()
 }
 
 func init() {
 
-cobra.OnInitialize(initConfig)
+cobra.OnInitialize(InitConfig)
 
 	// Global flags
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.copilot-research/config.yaml)")
-	rootCmd.PersistentFlags().StringVarP(&outputFile, "output", "o", "", "output file path")
-	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "quiet mode (no UI, just output)")
-	rootCmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "output as JSON")
-	rootCmd.PersistentFlags().StringVarP(&mode, "mode", "m", "quick", "research mode (quick|deep|compare|synthesis)")
-	rootCmd.PersistentFlags().StringVarP(&promptName, "prompt", "p", "default", "prompt template to use")
-	rootCmd.PersistentFlags().BoolVar(&noStore, "no-store", false, "don't save to database")
+	RootCmd.PersistentFlags().StringVar(&CfgFile, "config", "", "config file (default is $HOME/.copilot-research/config.yaml)")
+	RootCmd.PersistentFlags().StringVarP(&OutputFile, "output", "o", "", "output file path")
+	RootCmd.PersistentFlags().BoolVarP(&Quiet, "quiet", "q", false, "quiet mode (no UI, just output)")
+	RootCmd.PersistentFlags().BoolVar(&JSONOutput, "json", false, "output as JSON")
+	RootCmd.PersistentFlags().StringVarP(&Mode, "mode", "m", "quick", "research mode (quick|deep|compare|synthesis)")
+	RootCmd.PersistentFlags().StringVarP(&PromptName, "prompt", "p", "default", "prompt template to use")
+	RootCmd.PersistentFlags().BoolVar(&NoStore, "no-store", false, "don't save to database")
 }
 
-func initConfig() {
+// InitConfig initializes the configuration
+func InitConfig() {
 	// Dummy usage to satisfy linter for time import
 	var _ time.Duration
 
 	// Determine config file path
-	if cfgFile == "" {
+	if CfgFile == "" {
 	home, err := os.UserHomeDir()
 				if err != nil {
 				fmt.Fprintf(os.Stderr, "Error finding home directory: %v\n", err)
 				os.Exit(1)
 			}
-		// Corrected typo: cfgFile instead of cfigFile
-		cfgFile = filepath.Join(home, ".copilot-research", "config.yaml")
+		// Corrected typo: CfgFile instead of cfigFile
+		CfgFile = filepath.Join(home, ".copilot-research", "config.yaml")
 	}
 
 	// Load config
 	var err error
-	AppConfig, err = config.LoadConfig(cfgFile)
+	AppConfig, err = config.LoadConfig(CfgFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
 		os.Exit(1)

@@ -1,4 +1,4 @@
-package cmd // Changed from package knowledge
+package cmd
 
 import (
 	"fmt"
@@ -21,18 +21,18 @@ var (
 // Styles
 var (
 	titleStyle   = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("205"))
+		Bold(true).
+		Foreground(lipgloss.Color("205"))
 
 	headerStyle  = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("86"))
+		Bold(true).
+		Foreground(lipgloss.Color("86"))
 
 	infoStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("240"))
+		Foreground(lipgloss.Color("240"))
 
 	successStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("42"))
+		Foreground(lipgloss.Color("42"))
 )
 
 // knowledgeCmd represents the knowledge command
@@ -53,7 +53,7 @@ var listCmd = &cobra.Command{
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
 
-		entries, err := km.List()
+		entries, err := k.List()
 		if err != nil {
 			return fmt.Errorf("failed to list knowledge: %w", err)
 		}
@@ -110,7 +110,7 @@ var showCmd = &cobra.Command{
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
 
-		entry, err := km.Get(topic)
+		entry, err := k.Get(topic)
 		if err != nil {
 			return fmt.Errorf("knowledge not found: %s", topic)
 		}
@@ -152,7 +152,7 @@ var addCmd = &cobra.Command{
 		}
 
 		// Check if already exists
-		if _, err := km.Get(topic); err == nil {
+		if _, err := k.Get(topic); err == nil {
 			return fmt.Errorf("topic already exists: %s (use 'edit' to modify)", topic)
 		}
 
@@ -181,17 +181,16 @@ Add examples here...
 			return fmt.Errorf("no changes made, aborting")
 		}
 
-		// Create knowledge entry
-		k := &knowledge.Knowledge{
-			Topic:      topic,
-			Content:    content,
-			Source:     "manual",
-			Confidence: 0.8,
-			Tags:       []string{},
-		}
-
-		if err := km.Add(k); err != nil {
-			return fmt.Errorf("failed to add knowledge: %w", err)
+		        // Create knowledge entry
+				newKnowledge := &knowledge.Knowledge{
+					Topic:      topic,
+					Content:    content,
+					Source:     "manual",
+					Confidence: 0.8,
+					Tags:       []string{},
+				}
+		
+				if err := k.Add(newKnowledge); err != nil {			return fmt.Errorf("failed to add knowledge: %w", err)
 		}
 
 		fmt.Println(successStyle.Render("✓") + " Added: " + topic)
@@ -214,7 +213,7 @@ var editCmd = &cobra.Command{
 		}
 
 		// Get existing entry
-		entry, err := km.Get(topic)
+		entry, err := k.Get(topic)
 		if err != nil {
 			return fmt.Errorf("knowledge not found: %s", topic)
 		}
@@ -231,7 +230,7 @@ var editCmd = &cobra.Command{
 
 		// Update entry
 		entry.Content = content
-		if err := km.Update(topic, entry); err != nil {
+		if err := k.Update(topic, entry); err != nil {
 			return fmt.Errorf("failed to update knowledge: %w", err)
 		}
 
@@ -254,7 +253,7 @@ var searchCmd = &cobra.Command{
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
 
-		results, err := km.Search(query)
+		results, err := k.Search(query)
 		if err != nil {
 			return fmt.Errorf("search failed: %w", err)
 		}
@@ -306,7 +305,7 @@ var historyCmd = &cobra.Command{
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
 
-		commits, err := km.History(topic)
+		commits, err := k.History(topic)
 		if err != nil {
 			return fmt.Errorf("failed to get history: %w", err)
 		}
@@ -346,7 +345,7 @@ var consolidateCmd = &cobra.Command{
 		}
 
 		fmt.Println("Running consolidation...")
-		if err := km.Consolidate(); err != nil {
+		if err := k.Consolidate(); err != nil {
 			return fmt.Errorf("consolidation failed: %w", err)
 		}
 
@@ -355,59 +354,7 @@ var consolidateCmd = &cobra.Command{
 	},
 }
 
-// statsCmd shows knowledge stats
-var statsCmd = &cobra.Command{
-	Use:   "stats",
-	Short: "Show knowledge base statistics",
-	Long:  `Display statistics about the knowledge base.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		k, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
-		if err != nil {
-			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
-		}
 
-		entries, err := km.List()
-		if err != nil {
-			return fmt.Errorf("failed to list knowledge: %w", err)
-		}
-
-		// Calculate stats
-		totalTopics := len(entries)
-		totalTags := make(map[string]int)
-		avgConfidence := 0.0
-
-		for _, entry := range entries {
-			avgConfidence += entry.Confidence
-			for _, tag := range entry.Tags {
-				totalTags[tag]++
-			}
-		}
-
-		if totalTopics > 0 {
-			avgConfidence /= float64(totalTopics)
-		}
-
-		// Print stats
-		fmt.Println(titleStyle.Render("Knowledge Base Statistics"))
-		fmt.Println(strings.Repeat("━", 80))
-		fmt.Println()
-
-		fmt.Printf("%s %d\n", headerStyle.Render("Total Topics:"), totalTopics)
-		fmt.Printf("%s %.0f%%\n", headerStyle.Render("Average Confidence:"), avgConfidence*100)
-		fmt.Printf("%s %d\n", headerStyle.Render("Unique Tags:"), len(totalTags))
-
-		if len(totalTags) > 0 {
-			fmt.Println()
-			fmt.Println(headerStyle.Render("Top Tags:"))
-			// Simple display of tags
-			for tag, count := range totalTags {
-				fmt.Printf("  %s: %d\n", tag, count)
-			}
-		}
-
-		return nil
-	},
-}
 
 // rulesCmd manages rules
 var rulesCmd = &cobra.Command{
@@ -427,7 +374,7 @@ var rulesListCmd = &cobra.Command{
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
 
-		re, err := knowledge.NewRuleEngine(km)
+		re, err := knowledge.NewRuleEngine(k)
 		if err != nil {
 			return fmt.Errorf("failed to initialize rule engine: %w", err)
 		}
@@ -480,7 +427,7 @@ var rulesAddCmd = &cobra.Command{
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
 
-		re, err := knowledge.NewRuleEngine(km)
+		re, err := knowledge.NewRuleEngine(k)
 		if err != nil {
 			return fmt.Errorf("failed to initialize rule engine: %w", err)
 		}
@@ -514,7 +461,7 @@ var rulesRemoveCmd = &cobra.Command{
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
 
-		re, err := knowledge.NewRuleEngine(km)
+		re, err := knowledge.NewRuleEngine(k)
 		if err != nil {
 			return fmt.Errorf("failed to initialize rule engine: %w", err)
 		}
@@ -613,7 +560,7 @@ func openEditor(initialContent string) (string, error) {
 }
 
 func init() {
-	rootCmd.AddCommand(knowledgeCmd)
+	RootCmd.AddCommand(knowledgeCmd)
 
 	// Add subcommands
 	knowledgeCmd.AddCommand(listCmd)
@@ -623,7 +570,6 @@ func init() {
 	knowledgeCmd.AddCommand(searchCmd)
 	knowledgeCmd.AddCommand(historyCmd)
 	knowledgeCmd.AddCommand(consolidateCmd)
-	knowledgeCmd.AddCommand(statsCmd)
 	knowledgeCmd.AddCommand(rulesCmd)
 
 	// Rules subcommands

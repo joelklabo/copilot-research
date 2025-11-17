@@ -43,7 +43,7 @@ Examples:
 }
 
 func init() {
-	rootCmd.AddCommand(researchCmd)
+	RootCmd.AddCommand(researchCmd)
 	
 	// Command-specific flags
 	researchCmd.Flags().StringVarP(&inputFile, "input", "i", "", "input file containing query")
@@ -61,7 +61,7 @@ func runResearch(cmd *cobra.Command, args []string) error {
 	}
 	
 	// Validate mode
-	if err := validateMode(mode); err != nil {
+	if err := validateMode(Mode); err != nil {
 		return err
 	}
 	
@@ -115,7 +115,7 @@ database, err := db.NewSQLiteDB(dbPath)
 	engine := research.NewEngine(database, loader, providerMgr)
 	
 	// Run research
-	if quiet {
+	if Quiet {
 		return runQuietResearch(engine, query)
 	}
 	
@@ -134,9 +134,9 @@ func runQuietResearch(engine *research.Engine, query string) error {
 	
 	opts := research.ResearchOptions{
 		Query:      query,
-		Mode:       mode,
-		PromptName: promptName,
-		NoStore:    noStore,
+		Mode:       Mode,
+		PromptName: PromptName,
+		NoStore:    NoStore,
 	}
 	
 	result, err := engine.Research(ctx, opts, progress)
@@ -148,14 +148,14 @@ func runQuietResearch(engine *research.Engine, query string) error {
 	
 	// Format output
 	format := "markdown"
-	if jsonOutput {
+	if JSONOutput {
 		format = "json"
 	}
 	
 	output := formatOutput(result.Content, format)
 	
 	// Write output
-	if err := writeOutput(outputFile, output); err != nil {
+	if err := writeOutput(OutputFile, output); err != nil {
 		return fmt.Errorf("failed to write output: %w", err)
 	}
 	
@@ -164,7 +164,7 @@ func runQuietResearch(engine *research.Engine, query string) error {
 
 func runInteractiveResearch(engine *research.Engine, query string) error {
 	// Create UI model
-	model := ui.NewResearchModel(query, mode)
+	model := ui.NewResearchModel(query, Mode)
 	
 	// Create Bubble Tea program
 	p := tea.NewProgram(model)
@@ -183,9 +183,9 @@ func runInteractiveResearch(engine *research.Engine, query string) error {
 		
 		opts := research.ResearchOptions{
 			Query:      query,
-			Mode:       mode,
-			PromptName: promptName,
-			NoStore:    noStore,
+			Mode:       Mode,
+			PromptName: PromptName,
+			NoStore:    NoStore,
 		}
 		
 		result, err := engine.Research(ctx, opts, progress)

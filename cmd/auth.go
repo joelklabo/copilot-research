@@ -26,7 +26,7 @@ Use 'auth test' to verify provider connectivity.`,
 }
 
 func init() {
-	rootCmd.AddCommand(authCmd)
+	RootCmd.AddCommand(authCmd)
 
 	authCmd.AddCommand(authStatusCommand)
 	authCmd.AddCommand(authLoginCommand)

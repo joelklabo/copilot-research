@@ -10,13 +10,6 @@ import (
 	"github.com/joelklabo/copilot-research/internal/provider"
 )
 
-// Engine coordinates the research process
-type Engine struct {
-	db              *db.SQLiteDB
-	promptLoader    *prompts.PromptLoader
-	providerManager *provider.ProviderManager
-}
-
 // ResearchOptions contains options for a research query
 type ResearchOptions struct {
 	Query      string
@@ -34,8 +27,15 @@ type ResearchResult struct {
 	SessionID int64
 }
 
+// Engine coordinates the research process
+type Engine struct {
+	db              db.DB
+	promptLoader    *prompts.PromptLoader
+	providerManager *provider.ProviderManager
+}
+
 // NewEngine creates a new research engine
-func NewEngine(database *db.SQLiteDB, loader *prompts.PromptLoader, providerMgr *provider.ProviderManager) *Engine {
+func NewEngine(database db.DB, loader *prompts.PromptLoader, providerMgr *provider.ProviderManager) *Engine {
 	return &Engine{
 		db:              database,
 		promptLoader:    loader,

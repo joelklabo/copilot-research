@@ -1,17 +1,18 @@
-package cmd
+package cmd_test
 
 import (
 	"path/filepath"
 	"testing"
 
+	"github.com/joelklabo/copilot-research/cmd" // Import the cmd package
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRootCommand(t *testing.T) {
-	assert.NotNil(t, rootCmd)
-	assert.Equal(t, "copilot-research", rootCmd.Use)
-	assert.Contains(t, rootCmd.Short, "research")
-	assert.NotEmpty(t, rootCmd.Long)
+	assert.NotNil(t, cmd.RootCmd)
+	assert.Equal(t, "copilot-research", cmd.RootCmd.Use)
+	assert.Contains(t, cmd.RootCmd.Short, "research")
+	assert.NotEmpty(t, cmd.RootCmd.Long)
 }
 
 func TestGlobalFlags(t *testing.T) {
@@ -30,50 +31,50 @@ func TestGlobalFlags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flag := rootCmd.PersistentFlags().Lookup(tt.flagName)
+			flag := cmd.RootCmd.PersistentFlags().Lookup(tt.flagName)
 			assert.NotNil(t, flag, "Flag %s should exist", tt.flagName)
 		})
 	}
 }
 
 func TestVersionFlag(t *testing.T) {
-	assert.NotEmpty(t, rootCmd.Version)
+	assert.NotEmpty(t, cmd.RootCmd.Version)
 }
 
 func TestGetKnowledgeDir(t *testing.T) {
-	dir := GetKnowledgeDir()
+	dir := cmd.GetKnowledgeDir()
 	assert.NotEmpty(t, dir)
 	assert.Contains(t, dir, ".copilot-research")
 	assert.Contains(t, dir, "knowledge")
 }
 
 func TestGetConfigFile(t *testing.T) {
-	// Save original cfgFile and restore after test
-	originalCfgFile := cfgFile
-	defer func() { cfgFile = originalCfgFile }()
+	// Save original CfgFile and restore after test
+	originalCfgFile := cmd.CfgFile
+	defer func() { cmd.CfgFile = originalCfgFile }()
 
 	// Reset and initialize
-	cfgFile = ""
-	initConfig()
+	cmd.CfgFile = ""
+	cmd.InitConfig() // Call the exported InitConfig
 	
-	assert.NotEmpty(t, cfgFile)
-	assert.Contains(t, cfgFile, ".copilot-research")
-	assert.Contains(t, cfgFile, "config.yaml")
+	assert.NotEmpty(t, cmd.CfgFile)
+	assert.Contains(t, cmd.CfgFile, ".copilot-research")
+	assert.Contains(t, cmd.CfgFile, "config.yaml")
 }
 
 func TestConfigFileCustomPath(t *testing.T) {
-	// Save original cfgFile and restore after test
-	originalCfgFile := cfgFile
-	defer func() { cfgFile = originalCfgFile }()
+	// Save original CfgFile and restore after test
+	originalCfgFile := cmd.CfgFile
+	defer func() { cmd.CfgFile = originalCfgFile }()
 
 	// Create a temporary directory for the custom config file
 	tmpDir := t.TempDir()
 	customPath := filepath.Join(tmpDir, "custom_config.yaml")
 
 	// Set custom path
-	cfgFile = customPath
-	initConfig()
+	cmd.CfgFile = customPath
+	cmd.InitConfig() // Call the exported InitConfig
 	
 	// Should now be the custom path
-	assert.Equal(t, customPath, cfgFile)
+	assert.Equal(t, customPath, cmd.CfgFile)
 }

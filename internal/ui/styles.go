@@ -10,6 +10,7 @@ type Styles struct {
 	ResultStyle  lipgloss.Style
 	ErrorStyle   lipgloss.Style
 	SuccessStyle lipgloss.Style
+	HeaderStyle  lipgloss.Style
 }
 
 // DefaultStyles returns the default style configuration
@@ -40,5 +41,9 @@ func DefaultStyles() Styles {
 		SuccessStyle: lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("42")),
+
+		HeaderStyle: lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("86")),
 	}
 }
