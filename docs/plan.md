@@ -2028,7 +2028,7 @@ Tests: Input methods, output formats, UI/quiet modes
 ---
 
 #### Task 7.3: History Command
-**Status**: ⬜ Not Started  
+**Status**: 🔄 In Progress  
 **Estimated**: 30 minutes  
 **Priority**: P1
 
