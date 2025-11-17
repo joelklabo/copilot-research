@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time" // Added for provider timeouts
 
+	"github.com/joelklabo/copilot-research/internal/config" // Added
+	"github.com/joelklabo/copilot-research/internal/provider" // Added
 	"github.com/spf13/cobra"
 )
 
@@ -16,6 +19,9 @@ var (
 	mode       string
 	promptName string
 	noStore    bool
+
+	AppConfig *config.Config // Added global config
+	AppProviderManager *provider.ProviderManager // Added global provider manager
 )
 
 // rootCmd represents the base command
@@ -51,20 +57,74 @@ func init() {
 }
 
 func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag
-		return
+	// Determine config file path
+	if cfgFile == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error finding home directory: %v\n", err)
+			os.Exit(1)
+		}
+		cfgFile = filepath.Join(home, ".copilot-research", "config.yaml")
 	}
 
-	// Find home directory
-	home, err := os.UserHomeDir()
+	// Load config
+	var err error
+	AppConfig, err = config.LoadConfig(cfgFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error finding home directory: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Set default config file location
-	cfgFile = filepath.Join(home, ".copilot-research", "config.yaml")
+	// Initialize ProviderManager
+	factory := provider.NewProviderFactory()
+
+	// Register GitHub Copilot provider
+	ghConfig := AppConfig.Providers.GitHubCopilot
+	if ghConfig.Enabled {
+		ghProvider := provider.NewGitHubCopilotProvider(ghConfig.Timeout)
+		if err := factory.Register("github-copilot", ghProvider); err != nil {
+			fmt.Fprintf(os.Stderr, "Error registering GitHub Copilot provider: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	// Register OpenAI provider
+	openaiConfig := AppConfig.Providers.OpenAI
+	if openaiConfig.Enabled {
+		// Corrected call to NewOpenAIProvider
+		openaiProvider := provider.NewOpenAIProvider(
+			openaiConfig.Model,
+			openaiConfig.Timeout,
+		)
+		if err := factory.Register("openai", openaiProvider); err != nil {
+			fmt.Fprintf(os.Stderr, "Error registering OpenAI provider: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	// Register Anthropic provider
+	anthropicConfig := AppConfig.Providers.Anthropic
+	if anthropicConfig.Enabled {
+		// NewAnthropicProvider does not exist yet, this will cause a compile error
+		// I will implement this next.
+		anthropicProvider := provider.NewAnthropicProvider(
+			anthropicConfig.Model,
+			anthropicConfig.Timeout,
+			anthropicConfig.APIKeyEnv,
+		)
+		if err := factory.Register("anthropic", anthropicProvider); err != nil {
+			fmt.Fprintf(os.Stderr, "Error registering Anthropic provider: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	AppProviderManager = provider.NewProviderManager(
+		factory,
+		AppConfig.Providers.Primary,
+		AppConfig.Providers.Fallback,
+		AppConfig.Providers.AutoFallback,
+		AppConfig.Providers.NotifyFallback,
+	)
 }
 
 // GetKnowledgeDir returns the knowledge base directory
