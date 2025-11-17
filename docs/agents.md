@@ -475,6 +475,186 @@ rules:
 3. Unused import → Remove after refactoring
 4. Rule application fails → Fix pattern matching logic
 
+### 2025-11-17: CLI Commands Implementation (Cobra + Lipgloss)
+
+**Cobra Command Structure**:
+- Root command with global flags (--quiet, --json, --output)
+- Subcommands organized by feature (knowledge, auth, history, etc.)
+- Each subcommand has its own flags and validation
+- Use `cobra.ExactArgs(1)` for commands requiring specific argument count
+- `RunE` instead of `Run` for proper error handling
+
+**Lipgloss Styling Best Practices**:
+```go
+// Define styles once, reuse everywhere
+var (
+    titleStyle = lipgloss.NewStyle().
+        Bold(true).
+        Foreground(lipgloss.Color("205"))
+    
+    successStyle = lipgloss.NewStyle().
+        Foreground(lipgloss.Color("42"))
+)
+
+// Use consistent color palette
+// - 205: Pink/magenta for titles
+// - 86: Green for headers
+// - 240: Gray for info/metadata
+// - 42: Bright green for success
+// - 196: Red for errors
+```
+
+**Table Output with tabwriter**:
+- Use `text/tabwriter` for aligned columns
+- Set padding to 3 spaces for readability
+- Flush writer before returning
+- Style headers differently from data
+```go
+w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+fmt.Fprintf(w, "%s\t%s\n", headerStyle.Render("Name"), headerStyle.Render("Value"))
+w.Flush()
+```
+
+**Time Formatting for CLI**:
+- Use relative time for recent items ("2 hours ago", "just now")
+- Switch to absolute dates for older items (>30 days)
+- Helper function pattern:
+```go
+func formatTimeAgo(t time.Time) string {
+    duration := time.Since(t)
+    switch {
+    case duration < time.Hour:
+        return fmt.Sprintf("%d minutes ago", int(duration.Minutes()))
+    case duration < 24*time.Hour:
+        return fmt.Sprintf("%d hours ago", int(duration.Hours()))
+    default:
+        return t.Format("2006-01-02")
+    }
+}
+```
+
+**Editor Integration**:
+- Respect $EDITOR environment variable
+- Fall back to sensible default (nano, not vim - easier for new users)
+- Use temp files for editing
+- Clean up temp files after use
+```go
+editor := os.Getenv("EDITOR")
+if editor == "" {
+    editor = "nano"
+}
+cmd := exec.Command(editor, tempfile.Name())
+cmd.Stdin = os.Stdin
+cmd.Stdout = os.Stdout
+cmd.Stderr = os.Stderr
+cmd.Run()
+```
+
+**Empty State Messages**:
+- Always provide helpful guidance when no data exists
+- Tell users exactly how to add first item
+- Example:
+```
+No knowledge entries found.
+
+Add your first entry with:
+  copilot-research knowledge add <topic>
+```
+
+**Flag Patterns**:
+- Use long flags with descriptive names (--exclude, --reason)
+- Provide short flags for common operations (-o for output)
+- Set reasonable defaults
+- Validate required combinations
+
+**Common CLI Errors Fixed**:
+1. `undefined: fmt` → Add import in test file
+2. Editor doesn't open → Check $EDITOR is set or use fallback
+3. Tables misaligned → Ensure consistent tab spacing in tabwriter
+4. Color bleeding → Reset styles after use
+5. Long topic names overflow → Truncate or wrap intelligently
+
+### 2025-11-17: Prompt Loader & Template System
+
+**Embed vs File System**:
+- Initially tried `//go:embed` but path resolution is tricky
+- Embedded files must be in same directory or subdirectories
+- Solution: Load from filesystem with fallback to minimal default
+- Benefit: Users can customize prompts without rebuilding
+
+**Frontmatter Parsing Strategy**:
+- Reuse logic from knowledge system (already tested)
+- Split by lines, look for `---` delimiters
+- YAML unmarshal for frontmatter
+- Remaining content is template body
+- Same pattern works for both knowledge and prompts
+
+**Template Variable Substitution**:
+- Simple string replacement works well
+- Format: `{{variable_name}}`
+- Use map[string]string for variables
+- Apply all substitutions in order
+```go
+func Render(template string, vars map[string]string) string {
+    result := template
+    for key, value := range vars {
+        placeholder := fmt.Sprintf("{{%s}}", key)
+        result = strings.ReplaceAll(result, placeholder, value)
+    }
+    return result
+}
+```
+
+**Caching Strategy**:
+- Cache loaded prompts in memory (they rarely change)
+- Use sync.RWMutex for thread-safe access
+- Provide Reload() method to clear cache
+- Check cache before hitting filesystem
+
+**Prompt File Structure**:
+```markdown
+---
+name: quick
+description: Quick research prompt
+version: 1.0.0
+mode: quick
+---
+
+Your prompt content here...
+
+Use {{query}} and {{mode}} variables.
+```
+
+**Multiple Prompt Modes**:
+- `default.md` - Balanced, comprehensive research
+- `quick.md` - Fast overviews (5 min read time)
+- `deep-dive.md` - Exhaustive analysis with examples
+- `compare.md` - Side-by-side comparison with matrix
+- `synthesis.md` - Multi-source integration
+
+Each optimized for different use cases and reading times.
+
+**Testing Prompt Templates**:
+- Validate frontmatter fields exist and are non-empty
+- Check required template variables present ({{query}}, {{mode}})
+- Test variable substitution works correctly
+- Ensure no leftover {{}} after rendering
+- Use table-driven tests for multiple prompts
+
+**Prompt Design Principles**:
+1. Clear instructions for AI assistant role
+2. Explicit output format with sections
+3. Emphasis on accuracy and citations
+4. Examples of good responses
+5. Mode-specific guidelines
+6. Template variables for customization
+
+**Common Errors Fixed**:
+1. `pattern default.md: no matching files found` → Wrong embed path
+2. Test fails with minimal default → Load from actual prompts directory
+3. Variable not replaced → Typo in template variable name
+4. Empty prompt content → Check file exists before parsing
+
 ---
 
 *Keep updated as you discover patterns and solve problems.*
