@@ -13,6 +13,9 @@ var (
 	outputFile string
 	quiet      bool
 	jsonOutput bool
+	mode       string
+	promptName string
+	noStore    bool
 )
 
 // rootCmd represents the base command
@@ -42,6 +45,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&outputFile, "output", "o", "", "output file path")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "quiet mode (no UI, just output)")
 	rootCmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "output as JSON")
+	rootCmd.PersistentFlags().StringVarP(&mode, "mode", "m", "quick", "research mode (quick|deep|compare|synthesis)")
+	rootCmd.PersistentFlags().StringVarP(&promptName, "prompt", "p", "default", "prompt template to use")
+	rootCmd.PersistentFlags().BoolVar(&noStore, "no-store", false, "don't save to database")
 }
 
 func initConfig() {

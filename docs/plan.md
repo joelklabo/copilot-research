@@ -1925,7 +1925,7 @@ Tests: State transitions, rendering, error handling
 ### Phase 7: CLI Commands (Cobra)
 
 #### Task 7.1: Root Command and Basic Structure
-**Status**: ⬜ Not Started  
+**Status**: 🔄 In Progress  
 **Estimated**: 30 minutes  
 **Priority**: P0
 
