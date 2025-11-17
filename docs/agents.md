@@ -655,6 +655,92 @@ Each optimized for different use cases and reading times.
 3. Variable not replaced → Typo in template variable name
 4. Empty prompt content → Check file exists before parsing
 
+### 2025-11-17: Provider Abstraction System
+
+**Provider Architecture Pattern**:
+- Interface-based design allows multiple AI backends
+- Factory pattern for registration and retrieval
+- Manager pattern for primary/fallback logic
+- Thread-safe with sync.RWMutex for concurrent access
+
+**AIProvider Interface Design**:
+```go
+type AIProvider interface {
+    Name() string        // Unique identifier
+    Query() (*Response, error)  // Main query method
+    IsAuthenticated() bool      // Fast auth check
+    RequiresAuth() AuthInfo     // User guidance
+    Capabilities() ProviderCapabilities  // Feature detection
+}
+```
+
+**Key Implementation Principles**:
+1. **Context-aware**: All Query() methods must respect context cancellation
+2. **Timeout handling**: Use context.WithTimeout for all external calls
+3. **Authentication priority**: Check env vars → config files → CLI tools
+4. **Error clarity**: Convert API errors to actionable user messages
+5. **Standardized responses**: All providers return same Response format
+
+**Authentication Patterns**:
+- Fast checks: IsAuthenticated() should be < 1 second
+- Cache auth status: Don't validate credentials on every call
+- Multiple methods: Support env vars, config files, CLI tools
+- Priority order: Most direct (env var) to most complex (OAuth)
+- Clear instructions: RequiresAuth() tells users exactly what to do
+
+**GitHub Copilot Provider Specifics**:
+- Wraps `gh copilot suggest` CLI command
+- Three auth methods: COPILOT_GITHUB_TOKEN > GH_TOKEN > gh CLI
+- Uses `exec.CommandContext` for timeout support
+- Parses markdown output from gh copilot
+- Estimates token usage (4 chars per token)
+- Handles subscription/permission errors gracefully
+
+**Testing Strategies**:
+- Mock providers for unit tests (see MockProvider in provider_test.go)
+- Use `t.Skip()` when system auth prevents unauthenticated tests
+- Test auth priority order with multiple env vars set
+- Test context cancellation and timeout behavior
+- Integration tests separate from unit tests (require real credentials)
+
+**Provider Registration Pattern**:
+```go
+factory := NewProviderFactory()
+provider := NewGitHubCopilotProvider(timeout)
+factory.Register("github-copilot", provider)
+
+// Manager handles fallback
+manager := NewProviderManager(factory, "primary", "fallback")
+resp, err := manager.Query(ctx, prompt, opts)
+```
+
+**Response Standardization**:
+```go
+type Response struct {
+    Content    string                 // Clean text response
+    Provider   string                 // Which provider answered
+    Model      string                 // Model used
+    TokensUsed TokenUsage            // Usage tracking
+    Duration   time.Duration          // Performance metric
+    Metadata   map[string]interface{} // Provider-specific data
+}
+```
+
+**Common Provider Errors Fixed**:
+1. Not checking context.Done() → Add `ctx.Err()` checks
+2. Hanging on timeout → Use `context.WithTimeout`
+3. Unclear auth errors → Parse and provide helpful messages
+4. Token estimation wrong → Use provider data if available
+5. Tests fail due to system auth → Use `t.Skip()` conditionally
+
+**For Future AI Agents**:
+- Read `docs/provider-implementation-guide.md` - comprehensive guide
+- Follow pattern in `internal/provider/github_copilot.go`
+- Implement all interface methods with proper error handling
+- Write tests that adapt to local authentication state
+- Document auth methods and API requirements
+- Use standard Response format for consistency
+
 ---
 
 *Keep updated as you discover patterns and solve problems.*

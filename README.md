@@ -173,10 +173,104 @@ go build -o copilot-research
 ./copilot-research "test query"
 ```
 
+## AI Provider System
+
+Copilot Research uses a plugin-based provider system that supports multiple AI backends. Providers can be easily added without modifying core code.
+
+### Supported Providers
+
+Currently implemented:
+- **GitHub Copilot** - Via `gh copilot` CLI (default)
+- **OpenAI** - Coming soon
+- **Anthropic Claude** - Coming soon
+
+### Provider Configuration
+
+Configure providers in `~/.copilot-research/config.yaml`:
+
+```yaml
+providers:
+  primary: github-copilot
+  fallback: openai
+  
+  github-copilot:
+    enabled: true
+    auth_type: cli
+    timeout: 60s
+    
+  openai:
+    enabled: true
+    auth_type: apikey
+    api_key_env: OPENAI_API_KEY
+    model: gpt-4
+    timeout: 30s
+```
+
+### Authentication
+
+Each provider supports multiple authentication methods in priority order:
+
+**GitHub Copilot:**
+1. `COPILOT_GITHUB_TOKEN` environment variable
+2. `GH_TOKEN` environment variable
+3. `gh` CLI authentication (`gh auth login`)
+
+**OpenAI:**
+1. `OPENAI_API_KEY` environment variable
+2. Configuration file: `copilot-research config set openai.api_key sk-...`
+
+**Anthropic:**
+1. `ANTHROPIC_API_KEY` environment variable
+2. Configuration file: `copilot-research config set anthropic.api_key sk-ant-...`
+
+### Provider Fallback
+
+The system automatically falls back to secondary providers if the primary fails:
+
+```bash
+# Uses github-copilot, falls back to openai if unavailable
+copilot-research "topic"
+
+# Force specific provider
+copilot-research "topic" --provider openai
+
+# Check authentication status
+copilot-research providers status
+```
+
+### Implementing New Providers
+
+**For AI Agents:** See [Provider Implementation Guide](docs/provider-implementation-guide.md) for complete instructions on implementing new providers. This guide is designed to be read and followed by AI agents (Claude, Copilot, etc.) without human intervention.
+
+**Quick Summary:**
+1. Implement the `AIProvider` interface in `internal/provider/`
+2. Handle authentication with clear error messages
+3. Respect context cancellation and timeouts
+4. Return responses in standardized format
+5. Write comprehensive tests
+6. Register in factory
+
+Example provider interface:
+
+```go
+type AIProvider interface {
+    Name() string
+    Query(ctx context.Context, prompt string, opts QueryOptions) (*Response, error)
+    IsAuthenticated() bool
+    RequiresAuth() AuthInfo
+    Capabilities() ProviderCapabilities
+}
+```
+
+See `internal/provider/github_copilot.go` for a complete reference implementation.
+
 ## Requirements
 
 - Go 1.21+
-- GitHub CLI (`gh`) installed and authenticated
+- **At least one AI provider:**
+  - GitHub CLI (`gh`) with Copilot subscription
+  - OpenAI API key
+  - Anthropic API key
 - SQLite3
 
 ## Contributing
