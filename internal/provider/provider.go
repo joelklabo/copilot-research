@@ -134,18 +134,42 @@ func (f *ProviderFactory) Unregister(name string) error {
 
 // ProviderManager manages provider selection and fallback logic
 type ProviderManager struct {
-	factory  *ProviderFactory
-	primary  string
-	fallback string
+	factory              *ProviderFactory
+	primary              string
+	fallback             string
+	autoFallback         bool
+	notifyFallback       bool
+	notificationHandler  func(string)
 }
 
 // NewProviderManager creates a new provider manager
 func NewProviderManager(factory *ProviderFactory, primary, fallback string) *ProviderManager {
 	return &ProviderManager{
-		factory:  factory,
-		primary:  primary,
-		fallback: fallback,
+		factory:        factory,
+		primary:        primary,
+		fallback:       fallback,
+		autoFallback:   true,  // Enabled by default
+		notifyFallback: true,  // Enabled by default
+		notificationHandler: func(msg string) {
+			// Default: print to stdout
+			fmt.Println(msg)
+		},
 	}
+}
+
+// SetAutoFallback enables or disables automatic fallback
+func (pm *ProviderManager) SetAutoFallback(enabled bool) {
+	pm.autoFallback = enabled
+}
+
+// SetNotifyFallback enables or disables fallback notifications
+func (pm *ProviderManager) SetNotifyFallback(enabled bool) {
+	pm.notifyFallback = enabled
+}
+
+// SetNotificationHandler sets a custom notification handler
+func (pm *ProviderManager) SetNotificationHandler(handler func(string)) {
+	pm.notificationHandler = handler
 }
 
 // Query attempts to query the primary provider, falling back if it fails
@@ -158,14 +182,19 @@ func (pm *ProviderManager) Query(ctx context.Context, prompt string, opts QueryO
 			if err == nil {
 				return resp, nil
 			}
-			// Log that primary failed (in production, would use proper logging)
+			// Primary failed, log it
 		}
 	}
 	
-	// Try fallback provider
-	if pm.fallback != "" {
+	// Try fallback provider if auto-fallback is enabled
+	if pm.autoFallback && pm.fallback != "" {
 		provider, err := pm.factory.Get(pm.fallback)
 		if err == nil && provider.IsAuthenticated() {
+			// Notify user about fallback
+			if pm.notifyFallback && pm.notificationHandler != nil {
+				pm.notificationHandler(fmt.Sprintf("ℹ️  Using %s (primary unavailable)", pm.fallback))
+			}
+			
 			resp, err := provider.Query(ctx, prompt, opts)
 			if err == nil {
 				return resp, nil

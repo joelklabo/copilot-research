@@ -1487,7 +1487,7 @@ Tests: Auth, querying, errors
 ---
 
 #### Task 5.5: Provider Selection and Fallback Logic
-**Status**: ⬜ Not Started  
+**Status**: 🔄 In Progress  
 **Estimated**: 30 minutes  
 **Priority**: P1
 

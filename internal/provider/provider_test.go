@@ -329,3 +329,86 @@ func (m *MockProvider) RequiresAuth() AuthInfo {
 func (m *MockProvider) Capabilities() ProviderCapabilities {
 	return m.capabilities
 }
+
+// Test fallback notification is sent
+func TestProviderManager_FallbackNotification(t *testing.T) {
+	factory := NewProviderFactory()
+	
+	// Primary fails
+	primaryProvider := &MockProvider{
+		name:          "primary",
+		authenticated: false,
+	}
+	factory.Register("primary", primaryProvider)
+	
+	// Fallback succeeds
+	fallbackProvider := &MockProvider{
+		name:          "fallback",
+		authenticated: true,
+	}
+	factory.Register("fallback", fallbackProvider)
+	
+	manager := NewProviderManager(factory, "primary", "fallback")
+	
+	// Capture notifications
+	notifications := []string{}
+	manager.SetNotificationHandler(func(msg string) {
+		notifications = append(notifications, msg)
+	})
+	
+	ctx := context.Background()
+	resp, err := manager.Query(ctx, "test", QueryOptions{})
+	
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, "fallback", resp.Provider)
+	
+	// Should have received notification
+	assert.Greater(t, len(notifications), 0)
+	assert.Contains(t, notifications[0], "fallback")
+}
+
+// Test configurable fallback behavior
+func TestProviderManager_ConfigurableFallback(t *testing.T) {
+	factory := NewProviderFactory()
+	
+	primaryProvider := &MockProvider{
+		name:          "primary",
+		authenticated: true,
+	}
+	factory.Register("primary", primaryProvider)
+	
+	fallbackProvider := &MockProvider{
+		name:          "fallback",
+		authenticated: true,
+	}
+	factory.Register("fallback", fallbackProvider)
+	
+	manager := NewProviderManager(factory, "primary", "fallback")
+	
+	// Disable auto fallback
+	manager.SetAutoFallback(false)
+	
+	ctx := context.Background()
+	resp, err := manager.Query(ctx, "test", QueryOptions{})
+	
+	require.NoError(t, err)
+	assert.Equal(t, "primary", resp.Provider)
+}
+
+// Test list all providers
+func TestProviderManager_ListProviders(t *testing.T) {
+	factory := NewProviderFactory()
+	
+	factory.Register("provider1", &MockProvider{name: "provider1", authenticated: true})
+	factory.Register("provider2", &MockProvider{name: "provider2", authenticated: false})
+	factory.Register("provider3", &MockProvider{name: "provider3", authenticated: true})
+	
+	manager := NewProviderManager(factory, "provider1", "provider2")
+	
+	authenticated, unauthenticated := manager.CheckAuthentication()
+	
+	assert.Contains(t, authenticated, "provider1")
+	assert.Contains(t, authenticated, "provider3")
+	assert.Contains(t, unauthenticated, "provider2")
+}
