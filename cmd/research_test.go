@@ -105,7 +105,8 @@ func TestGetQueryFromStdin(t *testing.T) {
 	
 	// Write to pipe in goroutine
 	go func() {
-		w.Write([]byte(content))
+		_, err := w.Write([]byte(content)) // Added error check
+		require.NoError(t, err)
 		w.Close()
 	}()
 	

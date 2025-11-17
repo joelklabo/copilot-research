@@ -34,7 +34,7 @@ fmt:
 # Run linter
 lint:
 	@echo "Running linter..."
-	@golangci-lint run
+	@$(shell go env GOPATH)/bin/golangci-lint run
 	@echo "✅ Lint complete"
 
 # Run directly

@@ -14,31 +14,25 @@ import (
 )
 
 var (
-	searchQuery    string
-	knowledgeID    string
 	excludePattern string
 	excludeReason  string
 )
 
 // Styles
 var (
-	titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("205")).
-			MarginBottom(1)
+	titleStyle   = lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("205"))
 
-	headerStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("86"))
+	headerStyle  = lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("86"))
 
 	infoStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("240"))
+		Foreground(lipgloss.Color("240"))
 
 	successStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("42"))
-
-	errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("196"))
+		Foreground(lipgloss.Color("42"))
 )
 
 // knowledgeCmd represents the knowledge command
@@ -619,6 +613,9 @@ func openEditor(initialContent string) (string, error) {
 }
 
 func init() {
+	// Apply MarginBottom in init function
+	titleStyle = titleStyle.MarginBottom(1)
+
 	rootCmd.AddCommand(knowledgeCmd)
 
 	// Add subcommands

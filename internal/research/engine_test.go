@@ -66,8 +66,9 @@ func TestNewEngine(t *testing.T) {
 			Duration: 100 * time.Millisecond,
 		},
 	}
-	factory.Register("test", mockProvider)
-	providerMgr := provider.NewProviderManager(factory, "test", "")
+	err = factory.Register("test", mockProvider) // Added error check
+	require.NoError(t, err)
+	providerMgr := provider.NewProviderManager(factory, "test", "", false, false) // Updated
 
 	// Create engine
 	engine := NewEngine(database, loader, providerMgr)
@@ -95,8 +96,9 @@ func TestEngine_Research_FullFlow(t *testing.T) {
 			Duration: 100 * time.Millisecond,
 		},
 	}
-	factory.Register("test", mockProvider)
-	providerMgr := provider.NewProviderManager(factory, "test", "")
+	err = factory.Register("test", mockProvider) // Added error check
+	require.NoError(t, err)
+	providerMgr := provider.NewProviderManager(factory, "test", "", false, false) // Updated
 
 	// Create engine
 	engine := NewEngine(database, loader, providerMgr)
@@ -164,8 +166,9 @@ func TestEngine_Research_NoStore(t *testing.T) {
 			Duration: 100 * time.Millisecond,
 		},
 	}
-	factory.Register("test", mockProvider)
-	providerMgr := provider.NewProviderManager(factory, "test", "")
+	err = factory.Register("test", mockProvider) // Added error check
+	require.NoError(t, err)
+	providerMgr := provider.NewProviderManager(factory, "test", "", false, false) // Updated
 
 	// Create engine
 	engine := NewEngine(database, loader, providerMgr)
@@ -223,8 +226,9 @@ func TestEngine_Research_ProgressEvents(t *testing.T) {
 			Duration: 100 * time.Millisecond,
 		},
 	}
-	factory.Register("test", mockProvider)
-	providerMgr := provider.NewProviderManager(factory, "test", "")
+	err = factory.Register("test", mockProvider) // Added error check
+	require.NoError(t, err)
+	providerMgr := provider.NewProviderManager(factory, "test", "", false, false) // Updated
 
 	// Create engine
 	engine := NewEngine(database, loader, providerMgr)
@@ -289,8 +293,9 @@ func TestEngine_Research_ContextCancellation(t *testing.T) {
 		authenticated: true,
 		queryError:    context.Canceled,
 	}
-	factory.Register("test", mockProvider)
-	providerMgr := provider.NewProviderManager(factory, "test", "")
+	err = factory.Register("test", mockProvider) // Added error check
+	require.NoError(t, err)
+	providerMgr := provider.NewProviderManager(factory, "test", "", false, false) // Updated
 
 	// Create engine
 	engine := NewEngine(database, loader, providerMgr)
@@ -340,8 +345,9 @@ func TestEngine_Research_ProviderError(t *testing.T) {
 		authenticated: true,
 		queryError:    assert.AnError,
 	}
-	factory.Register("test", mockProvider)
-	providerMgr := provider.NewProviderManager(factory, "test", "")
+	err = factory.Register("test", mockProvider) // Added error check
+	require.NoError(t, err)
+	providerMgr := provider.NewProviderManager(factory, "test", "", false, false) // Updated
 
 	// Create engine
 	engine := NewEngine(database, loader, providerMgr)

@@ -254,11 +254,12 @@ func TestKnowledgeManager_ThreadSafety(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		go func(id int) {
 			k := &Knowledge{
-				Topic:   filepath.Join("concurrent", string(rune(id))),
+				Topic:   filepath.Join("concurrent", fmt.Sprintf("%d", id)), // Use fmt.Sprintf to convert int to string
 				Content: "Concurrent content",
 				Source:  "test",
 			}
-			km.Add(k)
+			err := km.Add(k) // Added error check
+			require.NoError(t, err)
 			done <- true
 		}(i)
 	}

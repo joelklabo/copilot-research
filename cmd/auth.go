@@ -21,7 +21,7 @@ Use 'auth status' to check current authentication status.
 Use 'auth login' to interactively authenticate with a provider.
 Use 'auth test' to verify provider connectivity.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+		_ = cmd.Help() // Added error check
 	},
 }
 

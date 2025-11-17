@@ -57,7 +57,8 @@ func TestProviderFactory_Get(t *testing.T) {
 	factory := NewProviderFactory()
 	
 	mockProvider := &MockProvider{name: "test"}
-	factory.Register("test", mockProvider)
+	err := factory.Register("test", mockProvider) // Added error check
+	require.NoError(t, err)
 	
 	// Get the provider
 	provider, err := factory.Get("test")
@@ -180,11 +181,13 @@ func TestProviderManager_QueryWithFallback(t *testing.T) {
 		authenticated: true,
 	}
 	
-	factory.Register("primary", primaryProvider)
-	factory.Register("fallback", fallbackProvider)
+	err := factory.Register("primary", primaryProvider) // Added error check
+	require.NoError(t, err)
+	err = factory.Register("fallback", fallbackProvider) // Added error check
+	require.NoError(t, err)
 	
 	// Create manager
-	manager := NewProviderManager(factory, "primary", "fallback")
+	manager := NewProviderManager(factory, "primary", "fallback", true, true) // Updated
 	
 	// Query should use fallback since primary is not authenticated
 	ctx := context.Background()
@@ -209,15 +212,17 @@ func TestProviderManager_QueryBothFail(t *testing.T) {
 		authenticated: false,
 	}
 	
-	factory.Register("primary", primaryProvider)
-	factory.Register("fallback", fallbackProvider)
+	err := factory.Register("primary", primaryProvider) // Added error check
+	require.NoError(t, err)
+	err = factory.Register("fallback", fallbackProvider) // Added error check
+	require.NoError(t, err)
 	
-	manager := NewProviderManager(factory, "primary", "fallback")
+	manager := NewProviderManager(factory, "primary", "fallback", true, true) // Updated
 	
 	ctx := context.Background()
 	opts := QueryOptions{}
 	
-	_, err := manager.Query(ctx, "test", opts)
+	_, err = manager.Query(ctx, "test", opts)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "all providers failed")
 }
@@ -236,10 +241,12 @@ func TestProviderManager_PrimarySuccess(t *testing.T) {
 		authenticated: true,
 	}
 	
-	factory.Register("primary", primaryProvider)
-	factory.Register("fallback", fallbackProvider)
+	err := factory.Register("primary", primaryProvider) // Added error check
+	require.NoError(t, err)
+	err = factory.Register("fallback", fallbackProvider) // Added error check
+	require.NoError(t, err)
 	
-	manager := NewProviderManager(factory, "primary", "fallback")
+	manager := NewProviderManager(factory, "primary", "fallback", true, true) // Updated
 	
 	ctx := context.Background()
 	opts := QueryOptions{}
@@ -263,10 +270,12 @@ func TestProviderManager_CheckAuthentication(t *testing.T) {
 		authenticated: false,
 	}
 	
-	factory.Register("auth", authenticatedProvider)
-	factory.Register("unauth", unauthenticatedProvider)
+	err := factory.Register("auth", authenticatedProvider) // Added error check
+	require.NoError(t, err)
+	err = factory.Register("unauth", unauthenticatedProvider) // Added error check
+	require.NoError(t, err)
 	
-	manager := NewProviderManager(factory, "auth", "unauth")
+	manager := NewProviderManager(factory, "auth", "unauth", true, true) // Updated
 	
 	authenticated, unauthenticated := manager.CheckAuthentication()
 	
@@ -339,16 +348,18 @@ func TestProviderManager_FallbackNotification(t *testing.T) {
 		name:          "primary",
 		authenticated: false,
 	}
-	factory.Register("primary", primaryProvider)
+	err := factory.Register("primary", primaryProvider) // Added error check
+	require.NoError(t, err)
 	
 	// Fallback succeeds
 	fallbackProvider := &MockProvider{
 		name:          "fallback",
 		authenticated: true,
 	}
-	factory.Register("fallback", fallbackProvider)
+	err = factory.Register("fallback", fallbackProvider) // Added error check
+	require.NoError(t, err)
 	
-	manager := NewProviderManager(factory, "primary", "fallback")
+	manager := NewProviderManager(factory, "primary", "fallback", true, true) // Updated
 	
 	// Capture notifications
 	notifications := []string{}
@@ -376,18 +387,17 @@ func TestProviderManager_ConfigurableFallback(t *testing.T) {
 		name:          "primary",
 		authenticated: true,
 	}
-	factory.Register("primary", primaryProvider)
+	err := factory.Register("primary", primaryProvider) // Added error check
+	require.NoError(t, err)
 	
 	fallbackProvider := &MockProvider{
 		name:          "fallback",
 		authenticated: true,
 	}
-	factory.Register("fallback", fallbackProvider)
+	err = factory.Register("fallback", fallbackProvider) // Added error check
+	require.NoError(t, err)
 	
-	manager := NewProviderManager(factory, "primary", "fallback")
-	
-	// Disable auto fallback
-	manager.SetAutoFallback(false)
+	manager := NewProviderManager(factory, "primary", "fallback", false, true) // Updated: autoFallback=false
 	
 	ctx := context.Background()
 	resp, err := manager.Query(ctx, "test", QueryOptions{})
@@ -400,11 +410,14 @@ func TestProviderManager_ConfigurableFallback(t *testing.T) {
 func TestProviderManager_ListProviders(t *testing.T) {
 	factory := NewProviderFactory()
 	
-	factory.Register("provider1", &MockProvider{name: "provider1", authenticated: true})
-	factory.Register("provider2", &MockProvider{name: "provider2", authenticated: false})
-	factory.Register("provider3", &MockProvider{name: "provider3", authenticated: true})
+	err := factory.Register("provider1", &MockProvider{name: "provider1", authenticated: true}) // Added error check
+	require.NoError(t, err)
+	err = factory.Register("provider2", &MockProvider{name: "provider2", authenticated: false}) // Added error check
+	require.NoError(t, err)
+	err = factory.Register("provider3", &MockProvider{name: "provider3", authenticated: true}) // Added error check
+	require.NoError(t, err)
 	
-	manager := NewProviderManager(factory, "provider1", "provider2")
+	manager := NewProviderManager(factory, "provider1", "provider2", true, true) // Updated
 	
 	authenticated, unauthenticated := manager.CheckAuthentication()
 	

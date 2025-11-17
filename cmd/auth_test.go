@@ -129,8 +129,10 @@ func TestRunAuthStatus(t *testing.T) {
 
 	// Create mock provider factory and manager
 	mockFactory := provider.NewProviderFactory()
-	mockFactory.Register(mockAuthProvider.Name(), mockAuthProvider)
-	mockFactory.Register(mockUnauthProvider.Name(), mockUnauthProvider)
+	err := mockFactory.Register(mockAuthProvider.Name(), mockAuthProvider) // Added error check
+	require.NoError(t, err)
+	err = mockFactory.Register(mockUnauthProvider.Name(), mockUnauthProvider) // Added error check
+	require.NoError(t, err)
 
 	// Updated call to NewProviderManager
 	AppProviderManager = provider.NewProviderManager(
@@ -146,7 +148,7 @@ func TestRunAuthStatus(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	err := runAuthStatus(authStatusCommand, []string{})
+	err = runAuthStatus(authStatusCommand, []string{})
 	require.NoError(t, err)
 
 	w.Close()

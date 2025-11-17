@@ -52,8 +52,8 @@ func runHistory(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 	
-	dbPath := filepath.Join(home, ".copilot-research", "research.db")
-	database, err := db.NewSQLiteDB(dbPath)
+dbPath := filepath.Join(home, ".copilot-research", "research.db")
+database, err := db.NewSQLiteDB(dbPath)
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
@@ -77,7 +77,10 @@ func handleClearHistory(database *db.SQLiteDB) error {
 	// Confirm deletion
 	fmt.Print("⚠️  This will delete all research history. Are you sure? (yes/no): ")
 	var response string
-	fmt.Scanln(&response)
+	_, err := fmt.Scanln(&response) // Added error check
+	if err != nil {
+		return fmt.Errorf("failed to read input: %w", err)
+	}
 	
 	if !validateClearConfirmation(response) {
 		fmt.Println("Cancelled.")
@@ -147,13 +150,13 @@ func handleListSessions(database *db.SQLiteDB, search, mode string, limit int) e
 	fmt.Println()
 	fmt.Println("Research History")
 	fmt.Println(strings.Repeat("═", 80))
-	fmt.Printf("%-5s %-12s %-50s %-10s\n", "ID", "Date", "Query", "Mode")
+	fmt.Printf("% -5s % -12s % -50s % -10s\n", "ID", "Date", "Query", "Mode")
 	fmt.Println(strings.Repeat("─", 80))
 	
 	for _, session := range sessions {
 		dateStr := session.CreatedAt.Format("2006-01-02")
 		queryStr := truncateString(session.Query, 48)
-		fmt.Printf("%-5d %-12s %-50s %-10s\n",
+		fmt.Printf("% -5d % -12s % -50s % -10s\n",
 			session.ID,
 			dateStr,
 			queryStr,
@@ -173,7 +176,7 @@ func handleListSessions(database *db.SQLiteDB, search, mode string, limit int) e
 // formatSessionSummary formats a session summary for display
 func formatSessionSummary(id int64, query, mode, date string) string {
 	queryStr := truncateString(query, 48)
-	return fmt.Sprintf("%-5d %-12s %-50s %-10s", id, date, queryStr, mode)
+	return fmt.Sprintf("% -5d % -12s % -50s % -10s", id, date, queryStr, mode)
 }
 
 // formatDuration formats a duration in seconds to human readable

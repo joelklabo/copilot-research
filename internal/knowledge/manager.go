@@ -381,13 +381,17 @@ func (km *KnowledgeManager) History(topic string) ([]GitCommit, error) {
 		}
 
 		var timestamp int64
-		fmt.Sscanf(parts[2], "%d", &timestamp)
+		_, err := fmt.Sscanf(parts[2], "%d", &timestamp) // Added error check
+		if err != nil {
+			// Log the error or handle it appropriately, for now, skip this commit
+			continue
+		}
 
 		commits = append(commits, GitCommit{
 			Hash:    parts[0],
-			Author:  parts[1],
-			Date:    time.Unix(timestamp, 0),
-			Message: parts[3],
+				Author:  parts[1],
+				Date:    time.Unix(timestamp, 0),
+				Message: parts[3],
 		})
 	}
 
