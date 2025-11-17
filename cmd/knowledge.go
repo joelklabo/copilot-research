@@ -1,4 +1,4 @@
-package cmd
+package cmd // Changed from package knowledge
 
 import (
 	"fmt"
@@ -21,18 +21,18 @@ var (
 // Styles
 var (
 	titleStyle   = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("205"))
+			Bold(true).
+			Foreground(lipgloss.Color("205"))
 
 	headerStyle  = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("86"))
+			Bold(true).
+			Foreground(lipgloss.Color("86"))
 
 	infoStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240"))
+			Foreground(lipgloss.Color("240"))
 
 	successStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("42"))
+			Foreground(lipgloss.Color("42"))
 )
 
 // knowledgeCmd represents the knowledge command
@@ -48,7 +48,7 @@ var listCmd = &cobra.Command{
 	Short: "List all knowledge topics",
 	Long:  `Display all topics in the knowledge base with their metadata.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		km, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
+		k, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
 		if err != nil {
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
@@ -105,7 +105,7 @@ var showCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		topic := args[0]
 
-		km, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
+		k, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
 		if err != nil {
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
@@ -146,7 +146,7 @@ var addCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		topic := args[0]
 
-		km, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
+		k, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
 		if err != nil {
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
@@ -208,7 +208,7 @@ var editCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		topic := args[0]
 
-		km, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
+		k, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
 		if err != nil {
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
@@ -249,7 +249,7 @@ var searchCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		query := args[0]
 
-		km, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
+		k, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
 		if err != nil {
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
@@ -301,7 +301,7 @@ var historyCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		topic := args[0]
 
-		km, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
+		k, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
 		if err != nil {
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
@@ -340,7 +340,7 @@ var consolidateCmd = &cobra.Command{
 	Short: "Consolidate knowledge entries",
 	Long:  `Run consolidation to merge and optimize knowledge entries.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		km, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
+		k, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
 		if err != nil {
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
@@ -361,7 +361,7 @@ var statsCmd = &cobra.Command{
 	Short: "Show knowledge base statistics",
 	Long:  `Display statistics about the knowledge base.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		km, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
+		k, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
 		if err != nil {
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
@@ -422,7 +422,7 @@ var rulesListCmd = &cobra.Command{
 	Short: "List all rules",
 	Long:  `Display all configured rules.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		km, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
+		k, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
 		if err != nil {
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
@@ -475,7 +475,7 @@ var rulesAddCmd = &cobra.Command{
 			return fmt.Errorf("--exclude pattern is required")
 		}
 
-		km, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
+		k, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
 		if err != nil {
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
@@ -509,7 +509,7 @@ var rulesRemoveCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ruleID := args[0]
 
-		km, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
+		k, err := knowledge.NewKnowledgeManager(GetKnowledgeDir())
 		if err != nil {
 			return fmt.Errorf("failed to initialize knowledge manager: %w", err)
 		}
@@ -613,9 +613,6 @@ func openEditor(initialContent string) (string, error) {
 }
 
 func init() {
-	// Apply MarginBottom in init function
-	titleStyle = titleStyle.MarginBottom(1)
-
 	rootCmd.AddCommand(knowledgeCmd)
 
 	// Add subcommands

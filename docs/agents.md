@@ -66,6 +66,19 @@ copilot-research/
 └── README.md              # User documentation
 ```
 
+## Documentation Overview
+
+This project maintains several documentation files to assist both users and contributors:
+
+-   **`README.md`**: The main project overview, quick start guide, and high-level feature descriptions.
+-   **`docs/USAGE.md`**: Comprehensive guide for using the CLI tool, including detailed command examples and options.
+-   **`docs/PROMPTS.md`**: Explains the prompt system, how to create custom prompts, template variables, and prompt engineering best practices.
+-   **`docs/DEVELOPMENT.md`**: A guide for contributors, covering development setup, testing, linting, code style, and the TDD workflow.
+-   **`docs/agents.md`**: (This file) Context and learnings specifically for AI agents working on the codebase.
+-   **`docs/plan.md`**: The detailed implementation plan and progress tracking.
+-   **`docs/architecture.md`**: High-level architectural overview and design decisions.
+-   **`docs/provider-implementation-guide.md`**: Specific guidance for implementing new AI providers.
+
 ## Development Workflow
 
 ### TDD Approach
@@ -78,15 +91,21 @@ copilot-research/
 7. Push to origin
 8. Update plan.md
 
+For more detailed development guidelines, including setup, testing, and linting, please refer to [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+
 ### Commit Messages
 ```
-[Component] Brief description
+<type>(<scope>): <short description>
 
-Detailed explanation of what changed and why.
-Mention any trade-offs or decisions made.
+[optional body]
 
-Tests: Added X, modified Y
+[optional footer(s)]
 ```
+
+**Examples:**
+-   `feat(cli): Add auth status command`
+-   `fix(db): Handle concurrent SQLite access`
+-   `docs(readme): Update usage section`
 
 ### Testing Strategy
 - Unit tests for business logic, integration tests for CLI commands, UI tests for Bubble Tea components, and performance benchmarks.

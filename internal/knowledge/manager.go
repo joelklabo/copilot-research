@@ -440,7 +440,7 @@ func (km *KnowledgeManager) commitDeletion(filename, message string) error {
 		if output, err := cmd.CombinedOutput(); err != nil {
 			// File might already be deleted
 			if !strings.Contains(string(output), "did not match any files") {
-				return fmt.Errorf("git command failed: %w, output: %s", err, output)
+				return fmt.Errorf("git command failed: %w", err)
 			}
 		}
 	}
