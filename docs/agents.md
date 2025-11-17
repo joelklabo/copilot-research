@@ -1318,6 +1318,51 @@ manager.SetNotificationHandler(func(msg string) {
 - Use custom handlers for testing and UI integration
 - Test both enabled and disabled states
 
+### 2025-11-17: History Command Implementation
+
+**Avoiding Command Name Conflicts**:
+- Check existing commands before adding new ones (`grep` for command names)
+- Knowledge module already has a `historyCmd` for git history
+- Renamed to `researchHistoryCmd` to avoid conflicts
+- Also renamed all package-level variables (`historySearchQuery`, etc.)
+
+**Database Integration Pattern**:
+```go
+home, _ := os.UserHomeDir()
+dbPath := filepath.Join(home, ".copilot-research", "research.db")
+database, err := db.NewSQLiteDB(dbPath)
+defer database.Close()
+```
+
+**Table Formatting**:
+- Use Unicode box drawing: `═` (double), `─` (single)
+- Fixed-width columns with `%-5d %-12s %-50s %-10s` format
+- Truncate long strings with ellipsis for readability
+- Show total count and helpful hints
+
+**Helper Function Patterns**:
+1. **formatDuration**: Human-readable time (45s, 1m 30s, 1h 1m)
+2. **truncateString**: Smart truncation with ellipsis
+3. **validateClearConfirmation**: Case-insensitive yes/no validation
+
+**Confirmation Pattern for Destructive Actions**:
+```go
+fmt.Print("⚠️  Warning message. Are you sure? (yes/no): ")
+var response string
+fmt.Scanln(&response)
+if !validateConfirmation(response) {
+    fmt.Println("Cancelled.")
+    return nil
+}
+```
+
+**For Future AI Agents**:
+- Always check for command name conflicts (grep existing code)
+- Use defer for cleanup (database.Close())
+- Add confirmation for destructive operations
+- Format tables for readability (fixed-width, truncation)
+- Provide helpful hints in command output
+
 ---
 
 *Keep updated as you discover patterns and solve problems.*
