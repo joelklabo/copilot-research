@@ -1020,6 +1020,139 @@ func (m ResearchModel) View() string {
 - Test all state transitions and keyboard controls
 - viewport.New() height should leave space for header/footer
 
+### 2025-11-17: CLI Command Implementation with Cobra
+
+**Main Command Pattern**:
+- Add command to root with `rootCmd.AddCommand(cmd)`
+- Use `RunE` for commands that can return errors
+- Command-specific flags vs persistent flags
+- Inherit global flags from root command
+
+**Input Source Priority Pattern**:
+```go
+func determineQuery(args []string, inputFile string) (string, error) {
+    // Priority: args > file > stdin
+    if len(args) > 0 {
+        return getQueryFromArgs(args)
+    }
+    if inputFile != "" {
+        return getQueryFromFile(inputFile)
+    }
+    // Check if stdin has data (not a TTY)
+    stat, _ := os.Stdin.Stat()
+    if (stat.Mode() & os.ModeCharDevice) == 0 {
+        return getQueryFromStdin()
+    }
+    return "", fmt.Errorf("no query provided")
+}
+```
+
+**Key Implementation Patterns**:
+1. **Input Method Detection**: Check for data before reading stdin
+   - Use `os.Stdin.Stat()` to check if stdin is a pipe
+   - `ModeCharDevice` = 0 means stdin has data (piped input)
+   - Priority order prevents confusion
+
+2. **Interactive vs Quiet Mode**: Different execution paths
+   - Interactive: Full Bubble Tea UI with live updates
+   - Quiet: Silent execution, just return result
+   - Controlled by `--quiet` flag
+
+3. **Background Research with UI**: Goroutine + message passing
+   ```go
+   go func() {
+       result, err := engine.Research(ctx, opts, progress)
+       if err != nil {
+           p.Send(ui.ErrorMsg{Err: err})
+           return
+       }
+       p.Send(ui.CompleteMsg{Result: result})
+   }()
+   ```
+
+4. **Progress Channel Bridge**: Connect engine to UI
+   ```go
+   go func() {
+       for msg := range progress {
+           p.Send(ui.ProgressMsg(msg))
+       }
+   }()
+   ```
+
+**Component Initialization Pattern**:
+```go
+// Create database
+database, err := db.NewSQLiteDB(dbPath)
+defer database.Close()
+
+// Create prompt loader  
+loader := prompts.NewPromptLoader(promptsDir)
+
+// Create provider
+factory := provider.NewProviderFactory()
+ghProvider := provider.NewGitHubCopilotProvider(timeout)
+factory.Register("github-copilot", ghProvider)
+providerMgr := provider.NewProviderManager(factory, primary, fallback)
+
+// Create engine
+engine := research.NewEngine(database, loader, providerMgr)
+```
+
+**Authentication Check Pattern**:
+- Check authentication before starting research
+- Return helpful error messages with instructions
+- Fail fast if not authenticated
+
+**Output Format Pattern**:
+```go
+func formatOutput(content string, format string) string {
+    switch format {
+    case "json":
+        output := map[string]interface{}{
+            "content": content,
+            "format":  "markdown",
+        }
+        return json.MarshalIndent(output, "", "  ")
+    default:
+        return content
+    }
+}
+```
+
+**File vs Stdout Pattern**:
+```go
+func writeOutput(filename string, content string) error {
+    if filename == "" {
+        fmt.Println(content)  // stdout
+        return nil
+    }
+    return os.WriteFile(filename, []byte(content), 0644)
+}
+```
+
+**Testing CLI Commands**:
+- Test command structure (Use, Short, Long)
+- Test flags are defined
+- Test helper functions independently
+- Test input method priority
+- Test validation logic
+- Don't test full execution (integration tests)
+
+**Common Mistakes Avoided**:
+1. Not checking stdin before reading → Hangs waiting for input
+2. Wrong stdin check → Use Stat() + ModeCharDevice check
+3. Not closing channels → Close progress channel after use
+4. Blocking main goroutine → Run research in background for UI
+5. Not deferring cleanup → Use defer for Close() calls
+
+**For Future AI Agents**:
+- Always check input source availability before reading
+- Use goroutines for background work with UI
+- Bridge channels between components (engine → UI)
+- Initialize all components with proper cleanup (defer)
+- Fail fast with helpful error messages
+- Test helper functions, not full command execution
+
 ---
 
 *Keep updated as you discover patterns and solve problems.*
