@@ -1235,6 +1235,89 @@ resp, err := client.CreateChatCompletion(ctx, req)
 - Test with environment variables (set/unset pattern)
 - Use QueryOptions to override defaults
 
+### 2025-11-17: Provider Fallback and Configuration
+
+**Enhanced ProviderManager Pattern**:
+```go
+type ProviderManager struct {
+    factory              *ProviderFactory
+    primary              string
+    fallback             string
+    autoFallback         bool  // Configurable
+    notifyFallback       bool  // Configurable  
+    notificationHandler  func(string)  // Customizable
+}
+```
+
+**Key Configuration Methods**:
+1. **SetAutoFallback(bool)**: Enable/disable automatic fallback
+   - Default: true (fallback enabled)
+   - Set to false to only use primary provider
+
+2. **SetNotifyFallback(bool)**: Enable/disable user notifications
+   - Default: true (notify on fallback)
+   - Useful for quiet mode
+
+3. **SetNotificationHandler(func(string))**: Custom notification handling
+   - Default: prints to stdout with fmt.Println
+   - Can override for logging, UI messages, etc.
+
+**Fallback Decision Flow**:
+```go
+// 1. Try primary provider
+if primary exists AND authenticated {
+    try query → success? return
+}
+
+// 2. Try fallback (if autoFallback enabled)
+if autoFallback AND fallback exists AND authenticated {
+    notify user if notifyFallback enabled
+    try query → success? return
+}
+
+// 3. All failed
+return error
+```
+
+**Notification Format**:
+- Uses Unicode emoji for visual clarity
+- Format: `ℹ️  Using {provider} (primary unavailable)`
+- Example: `ℹ️  Using openai (primary unavailable)`
+
+**Testing Fallback Logic**:
+- Test with primary failing, fallback succeeding
+- Test notification capture with custom handler
+- Test disabling auto-fallback
+- Test multiple providers in CheckAuthentication
+- Use mock providers with configurable auth state
+
+**Notification Handler Pattern**:
+```go
+notifications := []string{}
+manager.SetNotificationHandler(func(msg string) {
+    notifications = append(notifications, msg)
+})
+```
+
+**Integration with UI**:
+- Quiet mode: Disable notifications
+- Interactive mode: Use default stdout notifications
+- Custom: Send to Bubble Tea program via channel
+
+**Common Mistakes Avoided**:
+1. Not checking autoFallback → Always check before trying fallback
+2. Notifying when disabled → Check notifyFallback flag
+3. Nil notification handler → Initialize with default in constructor
+4. Hardcoded messages → Use fmt.Sprintf for dynamic content
+5. Not resetting state → Each Query is independent
+
+**For Future AI Agents**:
+- ProviderManager is the abstraction layer for multi-provider support
+- Always respect configuration flags (autoFallback, notifyFallback)
+- Provide sensible defaults (enabled by default)
+- Use custom handlers for testing and UI integration
+- Test both enabled and disabled states
+
 ---
 
 *Keep updated as you discover patterns and solve problems.*
