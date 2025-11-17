@@ -384,9 +384,453 @@ Tests: CRUD operations, concurrent access, search
 
 ---
 
-### Phase 3: Prompt Management
+### Phase 3: Knowledge Management System
 
-#### Task 3.1: Prompt Loader
+#### Task 3.1: Knowledge Base Structure and Models
+**Status**: 🔄 In Progress  
+**Estimated**: 30 minutes  
+**Priority**: P0
+
+**Description**:
+Create the knowledge base directory structure and Go models for managing research knowledge with Git-based versioning.
+
+**Acceptance Criteria**:
+- Create `~/.copilot-research/knowledge/` directory structure
+- Define Knowledge, Rule, and KnowledgeMetadata structs
+- Create knowledge schema (markdown files with frontmatter)
+- Initialize Git repository in knowledge directory
+- Create `.gitignore` for knowledge repo
+
+**Dependencies**: Task 2.2
+
+**Directory Structure**:
+```
+~/.copilot-research/knowledge/
+├── .git/                  # Git repo for versioning
+├── topics/                # Topic-based knowledge
+│   ├── swift-concurrency.md
+│   ├── swiftui-patterns.md
+│   └── ...
+├── patterns/              # Learned patterns
+│   ├── common-errors.md
+│   └── best-practices.md
+├── rules/                 # User preferences and rules
+│   ├── preferences.yaml
+│   └── exclusions.yaml
+└── MANIFEST.yaml         # Central registry
+```
+
+**Models**:
+```go
+type Knowledge struct {
+    ID          string    // SHA-256 of content
+    Topic       string    // e.g., "swift-concurrency"
+    Content     string    // Markdown content
+    Source      string    // URL or "learned" or "manual"
+    Confidence  float64   // 0.0 to 1.0
+    Tags        []string
+    CreatedAt   time.Time
+    UpdatedAt   time.Time
+    Version     int       // Incremented on update
+}
+
+type Rule struct {
+    ID          string
+    Type        string    // "exclude", "prefer", "always", "never"
+    Pattern     string    // What to match
+    Replacement string    // Optional
+    Reason      string    // Why this rule exists
+    CreatedAt   time.Time
+}
+
+type KnowledgeMetadata struct {
+    Version     string
+    LastSync    time.Time
+    TotalTopics int
+    TotalRules  int
+}
+```
+
+**Markdown Frontmatter Format**:
+```yaml
+---
+topic: swift-concurrency
+version: 3
+confidence: 0.95
+tags: [swift, concurrency, actors]
+source: https://example.com/swift-concurrency
+created: 2025-11-17T12:00:00Z
+updated: 2025-11-17T14:00:00Z
+---
+
+# Swift Concurrency
+
+[Content...]
+```
+
+**Tests**:
+- Directory creation works
+- Git initialization succeeds
+- Can parse frontmatter correctly
+- Can serialize/deserialize models
+
+**Commit Template**:
+```
+[Knowledge] Create knowledge base structure and models
+
+Created knowledge management system foundation:
+- Directory structure in ~/.copilot-research/knowledge/
+- Git-based versioning
+- Knowledge, Rule, and Metadata models
+- Markdown frontmatter format
+- MANIFEST.yaml schema
+
+Tests: Directory creation, parsing, serialization
+```
+
+---
+
+#### Task 3.2: Knowledge Manager Implementation
+**Status**: ⬜ Not Started  
+**Estimated**: 60 minutes  
+**Priority**: P0
+
+**Description**:
+Implement KnowledgeManager that handles CRUD operations, Git operations, deduplication, and consolidation of knowledge files.
+
+**Acceptance Criteria**:
+- CRUD operations for knowledge entries
+- Git commits with descriptive messages
+- Automatic deduplication on write
+- Consolidation pass after updates
+- Thread-safe operations
+- Load knowledge into prompt context
+
+**Dependencies**: Task 3.1
+
+**Implementation**:
+```go
+type KnowledgeManager struct {
+    baseDir    string
+    gitRepo    *git.Repository
+    cache      map[string]*Knowledge
+    mu         sync.RWMutex
+}
+
+func (km *KnowledgeManager) Add(k *Knowledge) error
+func (km *KnowledgeManager) Update(id string, k *Knowledge) error
+func (km *KnowledgeManager) Get(id string) (*Knowledge, error)
+func (km *KnowledgeManager) Search(query string) ([]*Knowledge, error)
+func (km *KnowledgeManager) List() ([]*Knowledge, error)
+func (km *KnowledgeManager) Delete(id string) error
+
+// Git operations
+func (km *KnowledgeManager) Commit(message string) error
+func (km *KnowledgeManager) History(topic string) ([]GitCommit, error)
+func (km *KnowledgeManager) Diff(from, to string) (string, error)
+
+// Consolidation
+func (km *KnowledgeManager) Consolidate() error
+func (km *KnowledgeManager) Deduplicate(topic string) error
+
+// Loading for prompts
+func (km *KnowledgeManager) GetRelevantKnowledge(query string, maxSize int) (string, error)
+```
+
+**Consolidation Strategy**:
+1. Group by topic
+2. Merge duplicate/similar content
+3. Keep highest confidence version
+4. Preserve unique information
+5. Update version numbers
+6. Git commit changes
+
+**Deduplication Algorithm**:
+- Calculate similarity score (cosine similarity of embeddings)
+- If similarity > 0.9, merge entries
+- Keep newer version if timestamps differ
+- Combine tags and sources
+
+**Git Commit Messages**:
+- "Add: {topic} - {summary}"
+- "Update: {topic} - {summary}"
+- "Consolidate: Merged {n} entries in {topic}"
+- "Remove: {topic} - {reason}"
+
+**Tests**:
+- CRUD operations work
+- Git commits created
+- Deduplication removes duplicates
+- Consolidation reduces file size
+- Thread-safe concurrent access
+- Relevant knowledge retrieval
+
+**Commit Template**:
+```
+[Knowledge] Implement knowledge manager with Git versioning
+
+Created KnowledgeManager with:
+- CRUD operations for knowledge entries
+- Automatic Git commits with descriptive messages
+- Deduplication on write
+- Consolidation pass for cleanup
+- Thread-safe operations
+- Relevant knowledge retrieval for prompts
+
+Tests: CRUD, Git ops, dedup, consolidation, concurrency
+```
+
+---
+
+#### Task 3.3: Rule System Implementation
+**Status**: ⬜ Not Started  
+**Estimated**: 45 minutes  
+**Priority**: P1
+
+**Description**:
+Implement rule system for user preferences, exclusions, and content filtering.
+
+**Acceptance Criteria**:
+- Add/remove/list rules
+- Apply rules to knowledge content
+- Persist rules in YAML
+- Rule validation
+- Pattern matching (regex support)
+
+**Dependencies**: Task 3.2
+
+**Rule Types**:
+```yaml
+rules:
+  - type: exclude
+    pattern: "Model View Controller|MVC"
+    reason: "Using MV architecture instead"
+    
+  - type: prefer
+    pattern: "Swift Testing"
+    over: "XCTest"
+    reason: "Modern testing framework"
+    
+  - type: always_mention
+    pattern: "actor isolation"
+    when: "swift.*concurrency"
+    
+  - type: never_mention
+    pattern: "Objective-C"
+    reason: "Swift-only codebase"
+```
+
+**Implementation**:
+```go
+type RuleEngine struct {
+    rules []Rule
+    km    *KnowledgeManager
+}
+
+func (re *RuleEngine) AddRule(rule Rule) error
+func (re *RuleEngine) RemoveRule(id string) error
+func (re *RuleEngine) ListRules() []Rule
+func (re *RuleEngine) Apply(content string) (string, error)
+func (re *RuleEngine) Validate(rule Rule) error
+```
+
+**Apply Algorithm**:
+1. Load all rules
+2. For each rule:
+   - If type == "exclude", remove matching content
+   - If type == "prefer", replace patterns
+   - If type == "always_mention", ensure inclusion
+   - If type == "never_mention", filter out
+3. Return filtered content
+
+**Tests**:
+- Rule CRUD operations
+- Pattern matching works
+- Content filtering correct
+- Rule validation catches errors
+- Rules persist across restarts
+
+**Commit Template**:
+```
+[Knowledge] Implement rule system for preferences
+
+Created RuleEngine with:
+- Add/remove/list rules
+- Multiple rule types (exclude, prefer, always, never)
+- Pattern matching with regex
+- Content filtering
+- YAML persistence
+
+Tests: Rule operations, pattern matching, filtering
+```
+
+---
+
+#### Task 3.4: Knowledge CLI Commands
+**Status**: ⬜ Not Started  
+**Estimated**: 45 minutes  
+**Priority**: P1
+
+**Description**:
+Add CLI commands for managing knowledge base, viewing history, and editing rules.
+
+**Acceptance Criteria**:
+- `knowledge list` - Show all topics
+- `knowledge show <topic>` - Display knowledge
+- `knowledge add <topic>` - Add new knowledge
+- `knowledge edit <topic>` - Edit in $EDITOR
+- `knowledge search <query>` - Search content
+- `knowledge history <topic>` - Show Git history
+- `knowledge consolidate` - Run consolidation
+- `knowledge rules` - Manage rules
+
+**Dependencies**: Task 3.3
+
+**Commands**:
+```bash
+copilot-research knowledge list
+copilot-research knowledge show swift-concurrency
+copilot-research knowledge add new-topic
+copilot-research knowledge edit swift-concurrency
+copilot-research knowledge search "actor isolation"
+copilot-research knowledge history swift-concurrency
+copilot-research knowledge consolidate
+copilot-research knowledge stats
+
+# Rule management
+copilot-research knowledge rules list
+copilot-research knowledge rules add --exclude "MVC"
+copilot-research knowledge rules remove <id>
+```
+
+**Output Examples**:
+```
+$ copilot-research knowledge list
+
+Knowledge Base (12 topics)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Topic                      Version  Updated
+swift-concurrency          3        2 hours ago
+swiftui-patterns          5        1 day ago
+networking-best-practices  2        3 days ago
+
+$ copilot-research knowledge show swift-concurrency
+
+Swift Concurrency (v3)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Confidence: 95%
+Tags: swift, concurrency, actors
+Source: https://docs.swift.org/...
+Updated: 2 hours ago
+
+[Content displayed with syntax highlighting]
+```
+
+**Tests**:
+- All commands execute correctly
+- Output formatted nicely
+- Editor launches for edit
+- Search returns relevant results
+- History shows commits
+
+**Commit Template**:
+```
+[CLI] Add knowledge management commands
+
+Implemented knowledge commands:
+- list: Show all topics
+- show: Display specific knowledge
+- add/edit: Manage content
+- search: Find relevant information
+- history: View Git history
+- consolidate: Run cleanup
+- rules: Manage preferences
+
+Beautiful table output with colors.
+
+Tests: All commands, formatting, editor
+```
+
+---
+
+#### Task 3.5: Auto-Learning from Research Results
+**Status**: ⬜ Not Started  
+**Estimated**: 45 minutes  
+**Priority**: P2
+
+**Description**:
+Automatically extract and store valuable knowledge from successful research sessions.
+
+**Acceptance Criteria**:
+- Analyze research results for patterns
+- Extract key information
+- Store as knowledge entries
+- Tag automatically
+- Calculate confidence based on source
+- Prompt user to review/approve
+
+**Dependencies**: Task 3.2, Task 4.2
+
+**Implementation**:
+```go
+type AutoLearner struct {
+    km     *KnowledgeManager
+    engine *ResearchEngine
+}
+
+func (al *AutoLearner) AnalyzeResult(result *ResearchResult) (*Knowledge, error)
+func (al *AutoLearner) ExtractTopics(content string) []string
+func (al *AutoLearner) CalculateConfidence(result *ResearchResult) float64
+func (al *AutoLearner) ShouldStore(k *Knowledge) bool
+```
+
+**Analysis Strategy**:
+1. Parse result markdown
+2. Extract headers as topics
+3. Identify code examples
+4. Find URLs for sources
+5. Calculate confidence:
+   - Official docs: 0.9-1.0
+   - GitHub repos: 0.7-0.9
+   - Blog posts: 0.5-0.7
+6. Prompt user if confidence < 0.8
+
+**User Prompt**:
+```
+Found valuable information about "Swift Concurrency"
+
+Would you like to save this to your knowledge base?
+[Y]es / [N]o / [E]dit first / [A]lways for this topic
+```
+
+**Tests**:
+- Topic extraction works
+- Confidence calculation reasonable
+- User prompts display correctly
+- Knowledge stored properly
+- Deduplication prevents duplicates
+
+**Commit Template**:
+```
+[Knowledge] Add auto-learning from research results
+
+Implemented auto-learning system:
+- Analyzes research results for patterns
+- Extracts topics and key information
+- Calculates confidence scores
+- Prompts user for approval
+- Stores in knowledge base
+
+Helps build knowledge over time.
+
+Tests: Analysis, extraction, confidence, storage
+```
+
+---
+
+### Phase 4: Prompt Management
+
+#### Task 4.1: Prompt Loader
 **Status**: ⬜ Not Started  
 **Estimated**: 30 minutes  
 **Priority**: P1
@@ -447,7 +891,7 @@ Tests: Loading, parsing, substitution, caching
 
 ---
 
-#### Task 3.2: Additional Prompt Templates
+#### Task 4.2: Additional Prompt Templates
 **Status**: ⬜ Not Started  
 **Estimated**: 30 minutes  
 **Priority**: P2
@@ -484,9 +928,9 @@ Tests: Manual validation with gh copilot
 
 ---
 
-### Phase 4: Research Engine
+### Phase 5: Research Engine
 
-#### Task 4.1: GitHub Copilot Integration
+#### Task 5.1: GitHub Copilot Integration
 **Status**: ⬜ Not Started  
 **Estimated**: 30 minutes  
 **Priority**: P0
@@ -534,7 +978,7 @@ Tests: Mock execution, error handling, timeout
 
 ---
 
-#### Task 4.2: Research Engine Core
+#### Task 5.2: Research Engine Core
 **Status**: ⬜ Not Started  
 **Estimated**: 45 minutes  
 **Priority**: P0
@@ -608,9 +1052,9 @@ Tests: Full flow, progress events, cancellation
 
 ---
 
-### Phase 5: Beautiful UI (Bubble Tea)
+### Phase 6: Beautiful UI (Bubble Tea)
 
-#### Task 5.1: UI Components - Spinner and Progress
+#### Task 6.1: UI Components - Spinner and Progress
 **Status**: ⬜ Not Started  
 **Estimated**: 30 minutes  
 **Priority**: P0
@@ -672,7 +1116,7 @@ Tests: Rendering, style application
 
 ---
 
-#### Task 5.2: Main Research UI Model
+#### Task 6.2: Main Research UI Model
 **Status**: ⬜ Not Started  
 **Estimated**: 60 minutes  
 **Priority**: P0
@@ -746,9 +1190,9 @@ Tests: State transitions, rendering, error handling
 
 ---
 
-### Phase 6: CLI Commands (Cobra)
+### Phase 7: CLI Commands (Cobra)
 
-#### Task 6.1: Root Command and Basic Structure
+#### Task 7.1: Root Command and Basic Structure
 **Status**: ⬜ Not Started  
 **Estimated**: 30 minutes  
 **Priority**: P0
@@ -796,7 +1240,7 @@ Tests: Flag parsing, config loading
 
 ---
 
-#### Task 6.2: Main Research Command
+#### Task 7.2: Main Research Command
 **Status**: ⬜ Not Started  
 **Estimated**: 45 minutes  
 **Priority**: P0
@@ -847,7 +1291,7 @@ Tests: Input methods, output formats, UI/quiet modes
 
 ---
 
-#### Task 6.3: History Command
+#### Task 7.3: History Command
 **Status**: ⬜ Not Started  
 **Estimated**: 30 minutes  
 **Priority**: P1
@@ -896,7 +1340,7 @@ Tests: List, search, filter, clear
 
 ---
 
-#### Task 6.4: Stats Command
+#### Task 7.4: Stats Command
 **Status**: ⬜ Not Started  
 **Estimated**: 20 minutes  
 **Priority**: P2
@@ -953,7 +1397,7 @@ Tests: Calculation, formatting, empty DB
 
 ---
 
-#### Task 6.5: Config Command
+#### Task 7.5: Config Command
 **Status**: ⬜ Not Started  
 **Estimated**: 25 minutes  
 **Priority**: P2
@@ -998,9 +1442,9 @@ Tests: Get, set, validation, reset
 
 ---
 
-### Phase 7: Polish and Documentation
+### Phase 8: Polish and Documentation
 
-#### Task 7.1: Add Makefile Targets
+#### Task 8.1: Add Makefile Targets
 **Status**: ⬜ Not Started  
 **Estimated**: 15 minutes  
 **Priority**: P1
@@ -1068,7 +1512,7 @@ Makes development workflow easier.
 
 ---
 
-#### Task 7.2: GitHub Actions CI
+#### Task 8.2: GitHub Actions CI
 **Status**: ⬜ Not Started  
 **Estimated**: 30 minutes  
 **Priority**: P1
@@ -1110,7 +1554,7 @@ Tests: Workflow syntax validation
 
 ---
 
-#### Task 7.3: Usage Examples and Documentation
+#### Task 8.3: Usage Examples and Documentation
 **Status**: ⬜ Not Started  
 **Estimated**: 45 minutes  
 **Priority**: P1
@@ -1151,7 +1595,7 @@ Includes GIFs showing UI in action.
 
 ---
 
-#### Task 7.4: Final Polish and Testing
+#### Task 8.4: Final Polish and Testing
 **Status**: ⬜ Not Started  
 **Estimated**: 60 minutes  
 **Priority**: P1
@@ -1198,31 +1642,32 @@ Ready for v1.0.0 release.
 
 ## Task Summary
 
-**Total Tasks**: 22
+**Total Tasks**: 27
 
 ### By Phase:
 - Phase 1 (Foundation): 3 tasks
 - Phase 2 (Database): 2 tasks
-- Phase 3 (Prompts): 2 tasks
-- Phase 4 (Research Engine): 2 tasks
-- Phase 5 (UI): 2 tasks
-- Phase 6 (CLI): 5 tasks
-- Phase 7 (Polish): 4 tasks
+- Phase 3 (Knowledge Management): 5 tasks
+- Phase 4 (Prompts): 2 tasks
+- Phase 5 (Research Engine): 2 tasks
+- Phase 6 (UI): 2 tasks
+- Phase 7 (CLI): 5 tasks
+- Phase 8 (Polish): 4 tasks
 
 ### By Priority:
-- P0 (Blocker): 12 tasks
-- P1 (High): 8 tasks
+- P0 (Blocker): 14 tasks
+- P1 (High): 11 tasks
 - P2 (Medium): 4 tasks
 
-**Estimated Total Time**: ~12 hours
+**Estimated Total Time**: ~15 hours
 
 ---
 
 ## Progress Tracking
 
-**Completed**: 0/22 (0%)  
-**In Progress**: 0/22 (0%)  
-**Not Started**: 22/22 (100%)
+**Completed**: 5/27 (19%)  
+**In Progress**: 1/27 (4%)  
+**Not Started**: 21/27 (78%)
 
 ---
 
@@ -1237,4 +1682,4 @@ Ready for v1.0.0 release.
 ---
 
 **Last Updated**: 2025-11-17  
-**Next Task**: Task 1.1 - Initialize Go Module
+**Next Task**: Task 3.1 - Knowledge Base Structure and Models
