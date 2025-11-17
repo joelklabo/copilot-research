@@ -741,6 +741,85 @@ type Response struct {
 - Document auth methods and API requirements
 - Use standard Response format for consistency
 
+### 2025-11-17: Research Engine Implementation
+
+**Core Orchestration Pattern**:
+- Engine coordinates prompt loading, provider querying, and storage
+- Progress channel for UI feedback (non-blocking)
+- Context-aware for cancellation support
+- Optional database storage via NoStore flag
+
+**Research Engine Design**:
+```go
+type Engine struct {
+    db              *db.SQLiteDB
+    promptLoader    *prompts.PromptLoader
+    providerManager *provider.ProviderManager
+}
+
+func (e *Engine) Research(ctx context.Context, opts ResearchOptions, progress chan<- string)
+```
+
+**Key Implementation Patterns**:
+1. **Progress Events**: Send status updates through channel without blocking
+   - "Loading prompt..."
+   - "Querying AI provider..."
+   - "Processing results..."
+   - "Storing in database..."
+   - "Complete!"
+
+2. **Context Checking**: Check `ctx.Err()` before long operations
+   - Before loading prompt
+   - Before querying provider
+   - Allows graceful cancellation
+
+3. **Default Values**: Handle empty/missing options gracefully
+   - Empty PromptName → default to "default"
+   - Empty Mode → default to "quick"
+
+4. **Error Handling**: Distinguish between critical and non-critical errors
+   - Provider query failure → return error (critical)
+   - Database save failure → log warning, continue (non-critical)
+
+5. **Testing with Channels**: Always drain progress channels in tests
+   ```go
+   progress := make(chan string, 10)
+   go func() { for range progress {} }()
+   // ... run test
+   close(progress)
+   ```
+
+**Duration Measurement**:
+- Use `time.Since(start)` for accurate duration tracking
+- In tests, use `GreaterOrEqual` for duration checks (synchronous operations may be < 1ms)
+- Store duration in ResearchResult for performance monitoring
+
+**Database Integration**:
+- NoStore flag allows skipping database for temporary queries
+- SessionID = 0 when NoStore is true
+- SaveSession populates session.ID after insert
+- Store prompt name, mode, and full result for history
+
+**Testing Strategy**:
+- Mock provider with configurable responses and errors
+- Test full flow, NoStore mode, progress events, cancellation, and error handling
+- Use `:memory:` database for isolation
+- Verify provider was called via flag in mock
+
+**Common Mistakes Avoided**:
+1. Blocking on progress channel → Use buffered channel or goroutine consumer
+2. Not checking context → Add ctx.Err() checks throughout
+3. Failing on non-critical errors → Storage failure shouldn't stop research
+4. Assuming duration > 0 → Fast operations can be < 1ms, use GreaterOrEqual
+5. Not draining channels in tests → Can cause goroutine leaks
+
+**For Future AI Agents**:
+- Research engine is the core orchestrator - other components feed into it
+- Always send progress events for UI feedback
+- Make database storage optional via flags
+- Use ProviderManager for provider abstraction and fallback
+- Test all error paths including context cancellation
+
 ---
 
 *Keep updated as you discover patterns and solve problems.*
