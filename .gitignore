@@ -1,0 +1,36 @@
+# Binaries
+copilot-research
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+*.test
+*.out
+coverage.txt
+*.coverprofile
+
+# Temp
+tmp/
+*.tmp
+*.log
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# Go
+vendor/
