@@ -345,6 +345,69 @@ rules:
 - Test deduplication algorithm
 - Test rule matching and application
 
+### 2025-11-17: KnowledgeManager Implementation Learnings
+
+**Thread-Safe Concurrent Access**:
+- Used `sync.RWMutex` for cache access (read-write lock)
+- Multiple readers can access simultaneously
+- Writers get exclusive lock
+- Lock at method level, not individual operations
+- Critical for concurrent CLI operations
+
+**Git Command Execution in Go**:
+- Use `exec.Command` for git operations
+- Set `cmd.Dir` to set working directory
+- Use `CombinedOutput()` to capture both stdout/stderr
+- Always check for specific error messages (e.g., "did not match any files")
+- Initialize git config (user.name, user.email) on repo creation
+
+**Filename Safety**:
+- Topics can contain `/` or spaces - must sanitize for filenames
+- Replace `/` with `-` (swift/feature → swift-feature)
+- Replace spaces with `_`
+- Filter to alphanumeric + `-` + `_` + `.` only
+- Use `strings.Map()` for character filtering
+
+**Frontmatter Parsing**:
+- Split by lines, not by string search (handles edge cases)
+- Look for `---` as trimmed line content
+- First `---` starts frontmatter, second ends it
+- Trim body content (remove leading/trailing whitespace)
+- YAML parsing is strict - test edge cases
+
+**Deduplication Algorithm**:
+- Word overlap metric for simplicity (can upgrade to embeddings)
+- Use map for "toRemove" to avoid double-marking
+- Threshold of 0.85 similarity works well
+- Keep higher confidence or newer version
+- Skip already-marked entries in nested loops
+
+**Testing File Operations**:
+- Use `t.TempDir()` - automatically cleaned up
+- Git operations may fail in temp dirs (path length, permissions)
+- Test with realistic content similarity (not just different words)
+- For concurrent tests, use channels to synchronize goroutines
+
+**Search Implementation**:
+- Case-insensitive matching (strings.ToLower)
+- Search across: topic, content, tags
+- Helper function for tag matching
+- Return all matches (let caller filter/rank)
+
+**Common Errors Fixed**:
+1. Undefined function → Missing import (strings, fmt)
+2. Invalid filepath → Special character in topic name
+3. Git command fails → Wrong working directory or bad permissions
+4. Tests fail → Content not similar enough for dedup threshold
+5. Empty search results → Case sensitivity or whitespace in parsed content
+
+**Performance Considerations**:
+- Cache all knowledge in memory for fast access
+- Reload cache only on initialization
+- Git operations are slow - minimize commits
+- Use `commitAll` for batch operations
+- Consider async git operations for large knowledge bases
+
 ---
 
 *Keep updated as you discover patterns and solve problems.*
