@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,6 +48,10 @@ func TestGetKnowledgeDir(t *testing.T) {
 }
 
 func TestGetConfigFile(t *testing.T) {
+	// Save original cfgFile and restore after test
+	originalCfgFile := cfgFile
+	defer func() { cfgFile = originalCfgFile }()
+
 	// Reset and initialize
 	cfgFile = ""
 	initConfig()
@@ -57,10 +62,18 @@ func TestGetConfigFile(t *testing.T) {
 }
 
 func TestConfigFileCustomPath(t *testing.T) {
+	// Save original cfgFile and restore after test
+	originalCfgFile := cfgFile
+	defer func() { cfgFile = originalCfgFile }()
+
+	// Create a temporary directory for the custom config file
+	tmpDir := t.TempDir()
+	customPath := filepath.Join(tmpDir, "custom_config.yaml")
+
 	// Set custom path
-	cfgFile = "/custom/path/config.yaml"
+	cfgFile = customPath
 	initConfig()
 	
-	// Should not change
-	assert.Equal(t, "/custom/path/config.yaml", cfgFile)
+	// Should now be the custom path
+	assert.Equal(t, customPath, cfgFile)
 }

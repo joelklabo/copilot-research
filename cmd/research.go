@@ -71,12 +71,12 @@ func runResearch(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 	
-	dbPath := filepath.Join(home, ".copilot-research", "research.db")
+dbPath := filepath.Join(home, ".copilot-research", "research.db")
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err != nil {
 		return fmt.Errorf("failed to create database directory: %w", err)
 	}
 	
-	database, err := db.NewSQLiteDB(dbPath)
+database, err := db.NewSQLiteDB(dbPath)
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
@@ -93,9 +93,19 @@ func runResearch(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to register provider: %w", err)
 	}
 	
-	providerMgr := provider.NewProviderManager(factory, "github-copilot", "")
+	// Updated call to NewProviderManager
+	// Use AppConfig.Providers.AutoFallback and AppConfig.Providers.NotifyFallback
+	providerMgr := provider.NewProviderManager(
+		factory,
+		AppConfig.Providers.Primary,
+		AppConfig.Providers.Fallback,
+		AppConfig.Providers.AutoFallback,
+		AppConfig.Providers.NotifyFallback,
+	)
 	
 	// Check authentication
+	// This check should be done by the providerMgr, not a specific provider
+	// For now, keep it for ghProvider as it's the only one registered here
 	if !ghProvider.IsAuthenticated() {
 		authInfo := ghProvider.RequiresAuth()
 		return fmt.Errorf("authentication required:\n\n%s", authInfo.Instructions)

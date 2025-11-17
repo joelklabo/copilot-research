@@ -143,18 +143,24 @@ type ProviderManager struct {
 }
 
 // NewProviderManager creates a new provider manager
-func NewProviderManager(factory *ProviderFactory, primary, fallback string) *ProviderManager {
+// Updated signature to include autoFallback and notifyFallback
+func NewProviderManager(factory *ProviderFactory, primary, fallback string, autoFallback, notifyFallback bool) *ProviderManager {
 	return &ProviderManager{
 		factory:        factory,
 		primary:        primary,
 		fallback:       fallback,
-		autoFallback:   true,  // Enabled by default
-		notifyFallback: true,  // Enabled by default
+		autoFallback:   autoFallback,  // Use provided value
+		notifyFallback: notifyFallback,  // Use provided value
 		notificationHandler: func(msg string) {
 			// Default: print to stdout
 			fmt.Println(msg)
 		},
 	}
+}
+
+// GetFactory returns the ProviderFactory associated with the manager
+func (pm *ProviderManager) GetFactory() *ProviderFactory {
+    return pm.factory
 }
 
 // SetAutoFallback enables or disables automatic fallback
