@@ -408,6 +408,73 @@ rules:
 - Use `commitAll` for batch operations
 - Consider async git operations for large knowledge bases
 
+### 2025-11-17: RuleEngine Implementation Learnings
+
+**Mutex Deadlock Prevention**:
+- NEVER call functions that acquire locks while holding a lock yourself
+- Pattern that causes deadlock:
+  ```go
+  func RemoveRule() {
+      re.mu.Lock()
+      defer re.mu.Unlock()
+      return re.save()  // save() tries to get RLock = DEADLOCK!
+  }
+  ```
+- Solution: Unlock before calling save()
+  ```go
+  func RemoveRule() {
+      re.mu.Lock()
+      re.rules = newRules
+      re.mu.Unlock()  // Unlock BEFORE calling save()
+      return re.save()
+  }
+  ```
+- Test symptom: Test hangs indefinitely with no output
+
+**Git Operations in Tests**:
+- Auto-committing on every save causes tests to hang
+- Git commands in temp directories can fail unexpectedly
+- Solution: Don't auto-commit in library code, let caller decide
+- Document that manual commit is needed for Git tracking
+
+**Regex Pattern Matching**:
+- Use `regexp.Compile()` once, cache if performance matters
+- `ReplaceAllString()` for simple replacements
+- `MatchString()` for presence checks
+- Case-insensitive: Use `(?i)` prefix in pattern
+
+**Rule Application Order**:
+- Order matters when applying multiple rules
+- Exclude rules can affect what prefer rules can replace
+- Solution: Apply rules in specific order or be smarter about removal
+- For exclude: Replace matched text, not whole sentences
+  - Bad: Remove entire sentence containing "MVVM"
+  - Good: Replace just "MVVM" with ""
+
+**YAML Persistence**:
+- Use struct tags for YAML marshaling
+- Empty slices marshal as `[]` not `null`
+- Read file, unmarshal, modify, marshal, write
+- Handle missing file gracefully (os.IsNotExist)
+
+**Test-Driven Development Flow**:
+1. Write test that calls undefined function → compile error ✓
+2. Implement minimal function signature → test fails ✓
+3. Implement logic → tests pass ✓
+4. Refactor → tests still pass ✓
+5. Commit with detailed message
+
+**UUID Generation**:
+- Use `github.com/google/uuid` for unique IDs
+- `uuid.New().String()` for new UUID
+- Store as string in structs (easier for YAML)
+
+**Common Errors Fixed**:
+1. Deadlock → Unlock before calling methods that lock
+2. Tests hang → Remove blocking git operations
+3. Unused import → Remove after refactoring
+4. Rule application fails → Fix pattern matching logic
+
 ---
 
 *Keep updated as you discover patterns and solve problems.*
