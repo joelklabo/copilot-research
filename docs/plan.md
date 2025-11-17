@@ -149,9 +149,10 @@ Tests: Directory structure validation
 ---
 
 #### Task 1.3: Default Prompt Template
-**Status**: 🚧 In Progress  
+**Status**: ✅ Complete  
 **Estimated**: 20 minutes  
-**Priority**: P0 (Blocker)
+**Priority**: P0 (Blocker)  
+**Commit**: 7f9c26b
 
 **Description**:
 Create the default prompt template that will be used to query GitHub Copilot. This should be optimized for research-style queries and produce high-quality markdown output.
@@ -213,7 +214,7 @@ Tests: Manual testing with gh copilot
 ### Phase 2: Core Database Layer
 
 #### Task 2.1: Database Models and Schema
-**Status**: ⬜ Not Started  
+**Status**: 🚧 In Progress  
 **Estimated**: 30 minutes  
 **Priority**: P0
 
